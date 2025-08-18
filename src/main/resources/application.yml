@@ -1,0 +1,75 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: digital-twin-websocket-server
+  
+  # RabbitMQ配置
+  rabbitmq:
+    # host: localhost
+    # port: 5672
+    # username: guest
+    # password: guest
+    # virtual-host: /
+
+    host: umi.xyz
+    port: 5672
+    username: thingsboard
+    password: Aa20250815!
+    virtual-host: /
+    
+    # 连接池配置
+    connection-timeout: 15000
+    requested-heartbeat: 30
+    
+    # 监听器配置
+    listener:
+      simple:
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
+        acknowledge-mode: manual
+        default-requeue-rejected: false
+        
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+# 日志配置
+logging:
+  level:
+    com.digitaltwin.websocket: DEBUG
+    org.springframework.web.socket: DEBUG
+    org.springframework.amqp: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/digital-twin-websocket.log
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# 自定义配置
+websocket:
+  # 主题配置
+  topics:
+    sensor-data: /topic/sensor-data
+    heartbeat: /topic/heartbeat
+  
+  # 队列配置
+  queues:
+    sensor-data: sensor.data.queue
