@@ -41,6 +41,12 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+# TDengine配置
+tdengine:
+  url: jdbc:TAOS-RS://localhost:6041/digital_twin
+  username: root
+  password: taosdata
+
 # 日志配置
 logging:
   level:
