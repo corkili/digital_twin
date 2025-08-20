@@ -60,6 +60,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- TDengine JDBC Driver -->
+        <dependency>
+            <groupId>com.taosdata.jdbc</groupId>
+            <artifactId>taos-jdbcdriver</artifactId>
+            <version>3.4.0</version>
+        </dependency>
+
         <!-- Development Tools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
