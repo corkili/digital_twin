@@ -40,12 +40,30 @@ spring:
     time-zone: GMT+8
     serialization:
       write-dates-as-timestamps: false
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
 
+  # H2数据库配置
+  datasource:
+    url: jdbc:h2:file:./data/channel_db
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ''
 # TDengine配置
 tdengine:
   url: jdbc:TAOS-RS://localhost:6041/digital_twin
   username: root
   password: taosdata
+opcua:
+  config:
+    gatewayId: ${GATEWAY_ID:b3238480-7db4-11f0-9b31-5b91814762c3}
+    serverUrl: ${SERVER_URL:https://thingsboard.umi.xyz}
+    username: ${OPC_USERNAME:tenant@thingsboard.org}
+    password: ${OPC_PASSWORD:Aa20250815!}
 
 # 日志配置
 logging:

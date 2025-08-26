@@ -52,8 +52,8 @@ public class OpcUaConfigService {
 
             // 创建登录请求体
             Map<String, String> loginRequest = Map.of(
-                "username", username,
-                "password", password
+                    "username", username,
+                    "password", password
             );
 
             HttpEntity<Map<String, String>> requestEntity = new HttpEntity<>(loginRequest, headers);
@@ -125,10 +125,8 @@ public class OpcUaConfigService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("X-Authorization", "Bearer " + token);
 
-            createConnectors(List.of(opcUaData.getName()));
-
             // 创建请求体
-            HttpEntity<Map<String,OpcUaConfigData>> requestEntity = new HttpEntity<>(Map.of(opcUaData.getName(), opcUaData), headers);
+            HttpEntity<Map<String, OpcUaConfigData>> requestEntity = new HttpEntity<>(Map.of(opcUaData.getName(), opcUaData), headers);
 
             // 发送POST请求
             ResponseEntity<String> response = restTemplate.postForEntity(targetUrl, requestEntity, String.class);
@@ -141,5 +139,18 @@ public class OpcUaConfigService {
             log.error("发送OPC UA配置数据失败: {}", e.getMessage(), e);
             throw new RuntimeException("发送OPC UA配置数据失败", e);
         }
+    }
+
+    public void createConnector(String serverUrl, String connectorName, List<String> totalConnectorNames) {
+        // 创建默认配置
+        OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig();
+
+        // 更新服务器URL为用户提供的URL
+        configData.getConfigurationJson().getServer().setUrl(serverUrl);
+        configData.setName(connectorName);
+        totalConnectorNames.add(connectorName);
+        createConnectors(totalConnectorNames);
+        // 发送配置到目标URL
+        String result = this.sendOpcUaConfig(configData);
     }
 }

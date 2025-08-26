@@ -1,0 +1,117 @@
+package com.digitaltwin.device.service;
+
+import com.digitaltwin.device.entity.Channel;
+import com.digitaltwin.device.repository.ChannelRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+public class ChannelService {
+
+    private final ChannelRepository channelRepository;
+    private final OpcUaConfigService opcUaConfigService;
+
+    public ChannelService(ChannelRepository channelRepository, OpcUaConfigService opcUaConfigService) {
+        this.channelRepository = channelRepository;
+        this.opcUaConfigService = opcUaConfigService;
+    }
+
+    /**
+     * 创建Channel
+     *
+     * @param channel Channel实体
+     * @return 保存后的Channel实体
+     */
+    public Channel createChannel(Channel channel) {
+        if (channelRepository.existsByName(channel.getName())) {
+            throw new RuntimeException("Channel名称已存在: " + channel.getName());
+        }
+
+        List<String> totalConnectorNames = channelRepository.findAll().stream()
+                .map(Channel::getName)
+                .collect(Collectors.toList());
+        Channel savedChannel = channelRepository.save(channel);
+
+        opcUaConfigService.createConnector(channel.getServerUrl(), channel.getName(), totalConnectorNames);
+
+
+        log.info("创建Channel成功，ID: {}", savedChannel.getId());
+        return savedChannel;
+    }
+
+    /**
+     * 根据ID获取Channel
+     *
+     * @param id Channel ID
+     * @return Channel实体
+     */
+    public Optional<Channel> getChannelById(Long id) {
+        return channelRepository.findById(id);
+    }
+
+    /**
+     * 根据名称获取Channel
+     *
+     * @param name Channel名称
+     * @return Channel实体
+     */
+    public Optional<Channel> getChannelByName(String name) {
+        return channelRepository.findByName(name);
+    }
+
+    /**
+     * 获取所有Channel
+     *
+     * @return Channel列表
+     */
+    public List<Channel> getAllChannels() {
+        return channelRepository.findAll();
+    }
+
+    /**
+     * 更新Channel
+     *
+     * @param id      Channel ID
+     * @param channel 更新的Channel信息
+     * @return 更新后的Channel实体
+     */
+    public Channel updateChannel(Long id, Channel channel) {
+        if (!channelRepository.existsById(id)) {
+            throw new RuntimeException("Channel不存在，ID: " + id);
+        }
+
+        channel.setId(id);
+        Channel updatedChannel = channelRepository.save(channel);
+        log.info("更新Channel成功，ID: {}", id);
+        return updatedChannel;
+    }
+
+    /**
+     * 删除Channel
+     *
+     * @param id Channel ID
+     */
+    public void deleteChannel(Long id) {
+        if (!channelRepository.existsById(id)) {
+            throw new RuntimeException("Channel不存在，ID: " + id);
+        }
+
+        channelRepository.deleteById(id);
+        log.info("删除Channel成功，ID: {}", id);
+    }
+
+    /**
+     * 根据服务器URL查找Channel
+     *
+     * @param serverUrl 服务器URL
+     * @return Channel列表
+     */
+    public List<Channel> getChannelsByServerUrl(String serverUrl) {
+        return channelRepository.findByServerUrl(serverUrl);
+    }
+}
