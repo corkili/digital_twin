@@ -1,5 +1,6 @@
 package com.digitaltwin.websocket.controller;
 
+import com.digitaltwin.websocket.annotation.PermAuth;
 import com.digitaltwin.websocket.model.WebSocketResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ public class HealthController {
 
     /**
      * 健康检查端点
+     * 不需要权限，用于基本的系统状态检查
      * 
      * @return 健康状态响应
      */
@@ -35,10 +37,12 @@ public class HealthController {
 
     /**
      * 获取WebSocket连接信息
+     * 需要数据查看权限
      * 
      * @return WebSocket连接状态
      */
     @GetMapping("/websocket")
+    @PermAuth("data_view")
     public WebSocketResponse<Map<String, Object>> websocketInfo() {
         Map<String, Object> wsInfo = new HashMap<>();
         wsInfo.put("endpoint", "/ws");

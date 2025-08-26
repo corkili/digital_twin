@@ -1,0 +1,27 @@
+# 系统权限配置文件
+# 第一级为权限唯一标识（英文），第二级包含name（权限名称）和desc（权限描述）
+
+# 数据查看权限
+data_view:
+  name: 数据查看权限
+  desc: 查看所有传感器数据的权限
+
+# 数据导出权限
+data_export:
+  name: 数据导出权限
+  desc: 导出传感器数据的权限
+
+# 设备管理权限
+device_manage:
+  name: 设备管理权限
+  desc: 管理设备信息的权限
+
+# 系统设置权限
+system_setting:
+  name: 系统设置权限
+  desc: 修改系统基本设置的权限
+
+# 预警配置权限
+alarm_config:
+  name: 预警配置权限
+  desc: 配置预警规则和阈值的权限

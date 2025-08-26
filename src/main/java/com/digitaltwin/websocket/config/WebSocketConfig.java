@@ -1,5 +1,7 @@
 package com.digitaltwin.websocket.config;
 
+import com.digitaltwin.websocket.interceptor.WebSocketAuthInterceptor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -12,7 +14,10 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  */
 @Configuration
 @EnableWebSocketMessageBroker
+@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    private final WebSocketAuthInterceptor webSocketAuthInterceptor;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
@@ -27,6 +32,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // 注册WebSocket端点，客户端将连接到此端点
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*") // 允许跨域
+                .addInterceptors(webSocketAuthInterceptor) // 添加认证拦截器
                 .withSockJS(); // 启用SockJS作为备选方案
     }
 }

@@ -7,6 +7,23 @@ spring:
   application:
     name: digital-twin-websocket-server
   
+  # PostgreSQL数据库配置
+  datasource:
+    url: jdbc:postgresql://localhost:5432/digital_twin
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update  # 自动创建、更新表结构
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
   # RabbitMQ配置
   rabbitmq:
     # host: localhost
