@@ -2,9 +2,11 @@ package com.digitaltwin.device.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.hibernate.id.GUIDGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class OpcUaConfigData {
@@ -14,25 +16,25 @@ public class OpcUaConfigData {
      *
      * @return 初始化的OpcUaConfigData实例
      */
-    public static OpcUaConfigData createDefaultConfig() {
+    public static OpcUaConfigData createDefaultConfig(String connectorName) {
         OpcUaConfigData configData = new OpcUaConfigData();
 
         // 初始化tby2对象
         configData.setMode("basic");
-        configData.setName("tby2");
+        configData.setName(connectorName);
         configData.setType("opcua");
         configData.setEnableRemoteLogging(true);
         configData.setLogLevel("INFO");
-        configData.setConfiguration("tby2.json");
+        configData.setConfiguration(connectorName+".json");
         configData.setConfigVersion("3.7.6");
         configData.setTs(System.currentTimeMillis());
 
         // 初始化configurationJson对象
         ConfigurationJson configurationJson = new ConfigurationJson();
         configurationJson.setLogLevel("INFO");
-        configurationJson.setName("tby2");
+        configurationJson.setName(connectorName);
         configurationJson.setEnableRemoteLogging(false);
-        configurationJson.setId("c09fa101-35ac-4089-844a-a83f31434350");
+        configurationJson.setId(UUID.randomUUID().toString());
         configurationJson.setConfigVersion("3.7.6");
 
         // 初始化server对象
@@ -60,19 +62,19 @@ public class OpcUaConfigData {
 
         // 初始化deviceInfo对象
         DeviceInfo deviceInfo = new DeviceInfo();
-        deviceInfo.setDeviceNameExpression("MyDevice");
+        deviceInfo.setDeviceNameExpression(connectorName);
         deviceInfo.setDeviceNameExpressionSource("constant");
-        deviceInfo.setDeviceProfileExpression("Device");
+        deviceInfo.setDeviceProfileExpression(connectorName);
         deviceInfo.setDeviceProfileExpressionSource("constant");
         mapping.setDeviceInfo(deviceInfo);
 
         // 初始化attributes列表
         List<Attribute> attributes = new ArrayList<>();
-        Attribute attribute = new Attribute();
-        attribute.setKey("Info");
-        attribute.setType("path");
-        attribute.setValue("${Root\\.Objects\\.MyDevice\\.Info}");
-        attributes.add(attribute);
+//        Attribute attribute = new Attribute();
+//        attribute.setKey("Info");
+//        attribute.setType("path");
+//        attribute.setValue("${Root\\.Objects\\.MyDevice\\.Info}");
+//        attributes.add(attribute);
         mapping.setAttributes(attributes);
 
         // 初始化timeseries列表

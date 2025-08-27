@@ -29,7 +29,7 @@ public class ChannelController {
     public ResponseEntity<ApiResponse> createAndSendOpcUaConfig(@RequestBody CreateChannelDto dto) {
         try {
             // 创建默认配置
-            OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig();
+            OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig(dto.getName());
             
             // 更新服务器URL为用户提供的URL
             configData.getConfigurationJson().getServer().setUrl(dto.getServerUrl());

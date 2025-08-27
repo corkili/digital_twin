@@ -143,7 +143,7 @@ public class OpcUaConfigService {
 
     public void createConnector(String serverUrl, String connectorName, List<String> totalConnectorNames) {
         // 创建默认配置
-        OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig();
+        OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig(connectorName);
 
         // 更新服务器URL为用户提供的URL
         configData.getConfigurationJson().getServer().setUrl(serverUrl);
