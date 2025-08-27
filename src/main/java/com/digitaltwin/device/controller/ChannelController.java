@@ -1,10 +1,12 @@
 package com.digitaltwin.device.controller;
 
+import com.digitaltwin.device.dto.ApiResponse;
 import com.digitaltwin.device.dto.OpcUaConfigData;
 import com.digitaltwin.device.dto.channel.CreateChannelDto;
 import com.digitaltwin.device.service.OpcUaConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +26,7 @@ public class ChannelController {
      * @return 发送结果
      */
     @PostMapping("/create-opcua-config")
-    public String createAndSendOpcUaConfig(@RequestBody CreateChannelDto dto) {
+    public ResponseEntity<ApiResponse> createAndSendOpcUaConfig(@RequestBody CreateChannelDto dto) {
         try {
             // 创建默认配置
             OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig();
@@ -36,11 +38,12 @@ public class ChannelController {
             // 发送配置到目标URL
             String result = opcUaConfigService.sendOpcUaConfig(configData);
             
-            return "配置已成功发送，响应: " + result;
+            return ResponseEntity.ok(ApiResponse.success("配置已成功发送", result));
             
         } catch (Exception e) {
             log.error("创建并发送OPC UA配置失败: {}", e.getMessage(), e);
-            return "发送失败: " + e.getMessage();
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("发送失败: " + e.getMessage()));
         }
     }
 }

@@ -1,7 +1,9 @@
 package com.digitaltwin.device.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import javax.persistence.*;
+import java.util.List;
 
 @Data
 @Entity
@@ -19,4 +21,8 @@ public class Channel {
     
     @Column(length = 500)
     private String description;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Device> devices;
 }
