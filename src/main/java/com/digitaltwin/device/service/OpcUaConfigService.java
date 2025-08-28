@@ -153,4 +153,11 @@ public class OpcUaConfigService {
         // 发送配置到目标URL
         String result = this.sendOpcUaConfig(configData);
     }
+
+    public void addPoint(String pointName, String valuePath) {
+        OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
+        timeseries.setKey(pointName);
+        timeseries.setType("path");
+        timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + valuePath + "}");
+    }
 }

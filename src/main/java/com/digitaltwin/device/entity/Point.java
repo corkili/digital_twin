@@ -4,6 +4,8 @@ import com.digitaltwin.device.consts.PointPublishMethod;
 import lombok.Data;
 import javax.persistence.*;
 
+import com.digitaltwin.device.entity.Channel;
+
 @Data
 @Entity
 @Table(name = "point")
@@ -23,4 +25,8 @@ public class Point {
     
     @Enumerated(EnumType.STRING)
     private PointPublishMethod publishMethod;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "channel_id", nullable = false)
+    private Channel channel;
 }

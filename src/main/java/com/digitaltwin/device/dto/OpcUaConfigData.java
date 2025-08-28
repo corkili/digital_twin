@@ -2,7 +2,6 @@ package com.digitaltwin.device.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import org.hibernate.id.GUIDGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +9,8 @@ import java.util.UUID;
 
 @Data
 public class OpcUaConfigData {
+    public static final String DeviceName = "MyDevice";
+
     /**
      * 创建一个默认的OPC UA配置实例
      * 根据提供的JSON数据初始化实体类
@@ -25,7 +26,7 @@ public class OpcUaConfigData {
         configData.setType("opcua");
         configData.setEnableRemoteLogging(true);
         configData.setLogLevel("INFO");
-        configData.setConfiguration(connectorName+".json");
+        configData.setConfiguration(connectorName + ".json");
         configData.setConfigVersion("3.7.6");
         configData.setTs(System.currentTimeMillis());
 
@@ -58,7 +59,7 @@ public class OpcUaConfigData {
         List<Mapping> mappingList = new ArrayList<>();
         Mapping mapping = new Mapping();
         mapping.setDeviceNodeSource("path");
-        mapping.setDeviceNodePattern("Root\\.Objects\\.MyDevice");
+        mapping.setDeviceNodePattern("Root\\.Objects\\." + DeviceName);
 
         // 初始化deviceInfo对象
         DeviceInfo deviceInfo = new DeviceInfo();

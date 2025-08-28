@@ -15,4 +15,5 @@ public class PointDto {
     private Double lowerLimit;
     private Double lowerLowLimit;
     private PointPublishMethod publishMethod;
+    private Long channelId;
 }

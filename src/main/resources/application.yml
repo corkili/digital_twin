@@ -65,12 +65,6 @@ opcua:
     username: ${OPC_USERNAME:tenant@thingsboard.org}
     password: ${OPC_PASSWORD:Aa20250815!}
 
-# TDengine配置
-tdengine:
-  url: jdbc:TAOS-RS://localhost:6041/digital_twin
-  username: root
-  password: taosdata
-
 # 日志配置
 logging:
   level:

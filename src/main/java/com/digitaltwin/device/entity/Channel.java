@@ -25,4 +25,8 @@ public class Channel {
     @JsonIgnore
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Device> devices;
+    
+    @JsonIgnore
+    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Point> points;
 }

@@ -1,10 +1,12 @@
 package com.digitaltwin.device.service;
 
-import com.digitaltwin.device.entity.Point;
-import com.digitaltwin.device.repository.PointRepository;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.CreatePointRequest;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
+import com.digitaltwin.device.entity.Point;
+import com.digitaltwin.device.entity.Channel;
+import com.digitaltwin.device.repository.PointRepository;
+import com.digitaltwin.device.repository.ChannelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 public class PointService {
     
     private final PointRepository pointRepository;
+    private final ChannelRepository channelRepository;
     
     /**
      * 创建点位
@@ -33,6 +36,12 @@ public class PointService {
         point.setLowerLimit(request.getLowerLimit());
         point.setLowerLowLimit(request.getLowerLowLimit());
         point.setPublishMethod(request.getPublishMethod());
+        
+        if (request.getChannelId() != null) {
+            Channel channel = channelRepository.findById(request.getChannelId())
+                    .orElseThrow(() -> new RuntimeException("Channel not found with id: " + request.getChannelId()));
+            point.setChannel(channel);
+        }
         
         Point savedPoint = pointRepository.save(point);
         return convertToDto(savedPoint);
@@ -90,6 +99,12 @@ public class PointService {
         point.setLowerLowLimit(request.getLowerLowLimit());
         point.setPublishMethod(request.getPublishMethod());
         
+        if (request.getChannelId() != null) {
+            Channel channel = channelRepository.findById(request.getChannelId())
+                    .orElseThrow(() -> new RuntimeException("Channel not found with id: " + request.getChannelId()));
+            point.setChannel(channel);
+        }
+        
         Point updatedPoint = pointRepository.save(point);
         return convertToDto(updatedPoint);
     }
@@ -121,6 +136,9 @@ public class PointService {
         dto.setLowerLimit(point.getLowerLimit());
         dto.setLowerLowLimit(point.getLowerLowLimit());
         dto.setPublishMethod(point.getPublishMethod());
+        if (point.getChannel() != null) {
+            dto.setChannelId(point.getChannel().getId());
+        }
         return dto;
     }
 }
