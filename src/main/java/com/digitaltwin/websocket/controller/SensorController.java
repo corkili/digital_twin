@@ -95,8 +95,6 @@ public class SensorController {
                                           String location, String status) {
         SensorData data = new SensorData();
         data.setID("sensor-" + UUID.randomUUID().toString());
-        data.setHeatFlux(113.93);
-        data.setCoolingWaterInTemp(coolingWaterInTemp);
         data.setTimestamp(System.currentTimeMillis());
         return data;
     }

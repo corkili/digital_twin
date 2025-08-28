@@ -1,0 +1,76 @@
+package com.digitaltwin.alarm.service;
+
+import com.digitaltwin.alarm.entity.Alarm;
+import com.digitaltwin.alarm.repository.AlarmRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AlarmQueryService {
+
+    private final AlarmRepository alarmRepository;
+
+    /**
+     * 根据设备ID获取告警
+     * 
+     * @param deviceId 设备ID
+     * @return 告警列表
+     */
+    public List<Alarm> getAlarmsByDeviceId(Long deviceId) {
+        try {
+            return alarmRepository.findByDeviceIdOrderByTimestampDesc(deviceId);
+        } catch (Exception e) {
+            log.error("根据设备ID获取告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取设备告警失败", e);
+        }
+    }
+
+    /**
+     * 根据点位标识获取告警
+     * 
+     * @param pointId 点位标识
+     * @return 告警列表
+     */
+    public List<Alarm> getAlarmsByPointId(String pointId) {
+        try {
+            return alarmRepository.findByPointIdOrderByTimestampDesc(pointId);
+        } catch (Exception e) {
+            log.error("根据点位标识获取告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取点位告警失败", e);
+        }
+    }
+
+    /**
+     * 根据传感器ID获取告警
+     * 
+     * @param sensorId 传感器ID
+     * @return 告警列表
+     */
+    public List<Alarm> getAlarmsBySensorId(String sensorId) {
+        try {
+            return alarmRepository.findBySensorIdOrderByTimestampDesc(sensorId);
+        } catch (Exception e) {
+            log.error("根据传感器ID获取告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取传感器告警失败", e);
+        }
+    }
+
+    /**
+     * 获取所有告警
+     * 
+     * @return 告警列表
+     */
+    public List<Alarm> getAllAlarms() {
+        try {
+            return alarmRepository.findAll();
+        } catch (Exception e) {
+            log.error("获取所有告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取所有告警失败", e);
+        }
+    }
+}

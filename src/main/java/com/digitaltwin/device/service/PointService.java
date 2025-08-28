@@ -127,8 +127,11 @@ public class PointService {
      * @return 点位DTO
      */
     public PointDto getPointByIdentity(String identity) {
-        Point point = pointRepository.findByIdentity(identity)
-                .orElseThrow(() -> new RuntimeException("Point not found with identity: " + identity));
+        List<Point> points = pointRepository.findByIdentity(identity);
+        if (points.isEmpty()) {
+            throw new RuntimeException("Point not found with identity: " + identity);
+        }
+        Point point = points.get(0); // 取第一个匹配的点位
         return convertToDto(point);
     }
 
