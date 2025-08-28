@@ -17,7 +17,7 @@ public class OpcUaConfigData {
      *
      * @return 初始化的OpcUaConfigData实例
      */
-    public static OpcUaConfigData createDefaultConfig(String connectorName) {
+    public static OpcUaConfigData createDefaultConfig(String connectorName, String url) {
         OpcUaConfigData configData = new OpcUaConfigData();
 
         // 初始化tby2对象
@@ -34,13 +34,13 @@ public class OpcUaConfigData {
         ConfigurationJson configurationJson = new ConfigurationJson();
         configurationJson.setLogLevel("INFO");
         configurationJson.setName(connectorName);
-        configurationJson.setEnableRemoteLogging(false);
+        configurationJson.setEnableRemoteLogging(true);
         configurationJson.setId(UUID.randomUUID().toString());
         configurationJson.setConfigVersion("3.7.6");
 
         // 初始化server对象
         Server server = new Server();
-        server.setUrl("localhost:4840/freeopcua/server/");
+        server.setUrl(url);
         server.setTimeoutInMillis(5000);
         server.setScanPeriodInMillis(3600000);
         server.setPollPeriodInMillis(5000);
@@ -71,34 +71,10 @@ public class OpcUaConfigData {
 
         // 初始化attributes列表
         List<Attribute> attributes = new ArrayList<>();
-//        Attribute attribute = new Attribute();
-//        attribute.setKey("Info");
-//        attribute.setType("path");
-//        attribute.setValue("${Root\\.Objects\\.MyDevice\\.Info}");
-//        attributes.add(attribute);
         mapping.setAttributes(attributes);
 
         // 初始化timeseries列表
         List<Timeseries> timeseriesList = new ArrayList<>();
-
-//        Timeseries timeseries1 = new Timeseries();
-//        timeseries1.setKey("CoolingWater_In_Temp");
-//        timeseries1.setType("path");
-//        timeseries1.setValue("${Root\\.Objects\\.MyDevice\\.Temperature\\.CoolingWater_In_Temp}");
-//        timeseriesList.add(timeseries1);
-//
-//        Timeseries timeseries2 = new Timeseries();
-//        timeseries2.setKey("HeatFlux");
-//        timeseries2.setType("path");
-//        timeseries2.setValue("${Root\\.Objects\\.MyDevice\\.HeatFlux\\.HeatFlux}");
-//        timeseriesList.add(timeseries2);
-//
-//        Timeseries timeseries3 = new Timeseries();
-//        timeseries3.setKey("AirPressure1");
-//        timeseries3.setType("path");
-//        timeseries3.setValue("${Root\\.Objects\\.MyDevice\\.Pressure\\.AirPressure1}");
-//        timeseriesList.add(timeseries3);
-
         mapping.setTimeseries(timeseriesList);
 
         // 初始化rpcMethods和attributesUpdates为空列表

@@ -15,6 +15,7 @@ public class Point {
     private Long id;
     
     private String identity;
+    private String path;
     private Boolean writeable;
     private String unit;
     private Boolean alarmable;

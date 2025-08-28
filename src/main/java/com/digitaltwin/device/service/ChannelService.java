@@ -1,7 +1,10 @@
 package com.digitaltwin.device.service;
 
+import com.digitaltwin.device.dto.OpcUaConfigData;
 import com.digitaltwin.device.entity.Channel;
 import com.digitaltwin.device.repository.ChannelRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +16,7 @@ import java.util.stream.Collectors;
 @Service
 public class ChannelService {
 
+    private final static ObjectMapper ObjectMapper = new ObjectMapper();
     private final ChannelRepository channelRepository;
     private final OpcUaConfigService opcUaConfigService;
 
@@ -35,9 +39,25 @@ public class ChannelService {
         List<String> totalConnectorNames = channelRepository.findAll().stream()
                 .map(Channel::getName)
                 .collect(Collectors.toList());
-        Channel savedChannel = channelRepository.save(channel);
 
-        opcUaConfigService.createConnector(channel.getServerUrl(), channel.getName(), totalConnectorNames);
+        totalConnectorNames.add(channel.getName());
+        // 创建默认配置
+        OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig(channel.getName(), channel.getServerUrl());
+
+        // 更新服务器URL为用户提供的URL
+        configData.getConfigurationJson().getServer().setUrl(channel.getServerUrl());
+        opcUaConfigService.createConnectors(totalConnectorNames);
+        // 发送配置到目标URL
+        String result = opcUaConfigService.sendOpcUaConfig(configData);
+
+        String opcUaConfigString = null;
+        try {
+            opcUaConfigString = ObjectMapper.writeValueAsString(configData);
+        } catch (JsonProcessingException e) {
+            log.error("ThingsBoard配置保存失败： ", e);
+        }
+        channel.setOpcUaConfig(opcUaConfigString);
+        Channel savedChannel = channelRepository.save(channel);
 
 
         log.info("创建Channel成功，ID: {}", savedChannel.getId());

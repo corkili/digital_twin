@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 public class CreatePointRequest {
     private String identity;
+    private String path;
     private Boolean writeable;
     private String unit;
     private Boolean alarmable;
