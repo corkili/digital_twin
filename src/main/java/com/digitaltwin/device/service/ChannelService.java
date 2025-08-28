@@ -46,7 +46,7 @@ public class ChannelService {
 
         // 更新服务器URL为用户提供的URL
         configData.getConfigurationJson().getServer().setUrl(channel.getServerUrl());
-        opcUaConfigService.createConnectors(totalConnectorNames);
+        opcUaConfigService.activeConnectors(totalConnectorNames);
         // 发送配置到目标URL
         String result = opcUaConfigService.sendOpcUaConfig(configData);
 

@@ -15,5 +15,5 @@ public class CreatePointRequest {
     private Double lowerLimit;
     private Double lowerLowLimit;
     private PointPublishMethod publishMethod;
-    private Long channelId;
+    private Long deviceId;
 }

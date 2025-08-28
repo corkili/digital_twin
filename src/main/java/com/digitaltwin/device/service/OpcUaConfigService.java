@@ -84,7 +84,7 @@ public class OpcUaConfigService {
      * @param connectorNames 连接器名称列表
      * @return 接口响应结果
      */
-    public String createConnectors(List<String> connectorNames) {
+    public String activeConnectors(List<String> connectorNames) {
         String targetUrl = serverUrl + "/api/plugins/telemetry/DEVICE/" + gatewayId + "/SHARED_SCOPE";
         try {
             // 先登录获取token
@@ -139,55 +139,13 @@ public class OpcUaConfigService {
             log.debug("响应内容: {}", response.getBody());
 
             // 发送GET请求以使配置生效
-            triggerConfigurationActivation(token);
+//            triggerConfigurationActivation(token);
+//            triggerServerScopeConfigurationActivation(token);
 
             return response.getBody();
         } catch (Exception e) {
             log.error("发送OPC UA配置数据失败: {}", e.getMessage(), e);
             throw new RuntimeException("发送OPC UA配置数据失败", e);
         }
-    }
-
-    /**
-     * 触发配置生效的GET请求
-     *
-     * @param token 认证令牌
-     */
-    private void triggerConfigurationActivation(String token) {
-        String getUrl = serverUrl + "/api/plugins/telemetry/DEVICE/" + gatewayId + "/values/attributes/SHARED_SCOPE";
-        try {
-            // 设置请求头
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("X-Authorization", "Bearer " + token);
-
-            // 创建请求实体
-            HttpEntity<?> requestEntity = new HttpEntity<>(headers);
-
-            // 发送GET请求
-//            ResponseEntity<String> response = restTemplate.getForEntity(getUrl, String.class);
-            ResponseEntity<String> response = restTemplate.exchange(getUrl, HttpMethod.GET, requestEntity, String.class);
-
-            log.info("配置激活请求发送成功，状态码: {}", response.getStatusCode());
-            log.debug("配置激活响应内容: {}", response.getBody());
-        } catch (Exception e) {
-            log.error("发送配置激活请求失败: {}", e.getMessage(), e);
-            // 不抛出异常，因为这不影响主要功能
-        }
-    }
-
-    public void addPoint(OpcUaConfigData configData, String pointName, String valuePath) {
-        OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
-        timeseries.setKey(pointName);
-        timeseries.setType("path");
-        timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + valuePath + "}");
-        configData.getConfigurationJson().getMapping().get(0).getTimeseries().add(timeseries);
-        String result = this.sendOpcUaConfig(configData);
-        String opcUaConfigString = null;
-        try {
-            opcUaConfigString = ObjectMapper.writeValueAsString(configData);
-        } catch (JsonProcessingException e) {
-            log.error("ThingsBoard配置保存失败： ", e);
-        }
-//        channel.setOpcUaConfig(opcUaConfigString);
     }
 }

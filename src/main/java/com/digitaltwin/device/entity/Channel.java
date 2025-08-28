@@ -26,9 +26,9 @@ public class Channel {
     @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Device> devices;
     
-    @JsonIgnore
-    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Point> points;
+//    @JsonIgnore
+//    @OneToMany(mappedBy = "channel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+//    private List<Point> points;
 
     @Column(length = 2000)
     private String opcUaConfig;

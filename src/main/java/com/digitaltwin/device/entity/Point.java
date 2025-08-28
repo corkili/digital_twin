@@ -28,6 +28,6 @@ public class Point {
     private PointPublishMethod publishMethod;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "channel_id", nullable = false)
-    private Channel channel;
+    @JoinColumn(name = "device_id", nullable = false)
+    private Device device;
 }
