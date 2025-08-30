@@ -24,6 +24,12 @@
 4. **下下限告警**: 当数值 < lowerLowLimit 时触发（优先级高于下限告警）
 5. **状态告警**: 当布尔值等于 stateAlarm 配置值时触发
 
+### 告警状态
+
+1. **未确认**: 告警刚生成时的默认状态
+2. **已确认**: 告警已被用户确认
+3. **已忽略**: 告警已被用户忽略
+
 ## API接口
 
 ### 查询告警
@@ -46,6 +52,16 @@ GET /api/alarms/sensor/{sensorId}
 #### 4. 查询所有告警
 ```bash
 GET /api/alarms/all
+```
+
+#### 5. 根据告警状态查询告警
+```bash
+GET /api/alarms/state/{state}
+```
+
+#### 6. 根据告警状态和设备ID查询告警
+```bash
+GET /api/alarms/state/{state}/device/{deviceId}
 ```
 
 ### 创建点位并配置告警
@@ -81,6 +97,18 @@ curl -X POST http://localhost:8080/points \
     "stateAlarm": true,
     "deviceId": 1
   }'
+
+### 告警操作接口
+
+#### 1. 确认告警
+```bash
+curl -X POST http://localhost:8080/api/alarms/{alarmId}/acknowledge
+```
+
+#### 2. 忽略告警
+```bash
+curl -X POST http://localhost:8080/api/alarms/{alarmId}/ignore
+```
 ```
 
 ## 测试告警功能
@@ -150,6 +178,7 @@ curl http://localhost:8080/api/alarms/point/test-temp
 - **alarmThreshold**: 告警阈值
 - **deviceId**: 设备ID
 - **createdAt**: 创建时间
+- **state**: 告警状态（未确认/已确认/已忽略）
 
 ## 性能优化
 

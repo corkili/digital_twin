@@ -1,6 +1,7 @@
 package com.digitaltwin.alarm.service;
 
 import com.digitaltwin.alarm.entity.Alarm;
+import com.digitaltwin.alarm.entity.AlarmState;
 import com.digitaltwin.alarm.repository.AlarmRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,37 @@ public class AlarmQueryService {
         } catch (Exception e) {
             log.error("获取所有告警失败: {}", e.getMessage(), e);
             throw new RuntimeException("获取所有告警失败", e);
+        }
+    }
+    
+    /**
+     * 根据告警状态获取告警
+     * 
+     * @param state 告警状态
+     * @return 告警列表
+     */
+    public List<Alarm> getAlarmsByState(AlarmState state) {
+        try {
+            return alarmRepository.findByStateOrderByTimestampDesc(state);
+        } catch (Exception e) {
+            log.error("根据告警状态获取告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取告警失败", e);
+        }
+    }
+    
+    /**
+     * 根据告警状态和设备ID获取告警
+     * 
+     * @param state 告警状态
+     * @param deviceId 设备ID
+     * @return 告警列表
+     */
+    public List<Alarm> getAlarmsByStateAndDeviceId(AlarmState state, Long deviceId) {
+        try {
+            return alarmRepository.findByStateAndDeviceIdOrderByTimestampDesc(state, deviceId);
+        } catch (Exception e) {
+            log.error("根据告警状态和设备ID获取告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取告警失败", e);
         }
     }
 }

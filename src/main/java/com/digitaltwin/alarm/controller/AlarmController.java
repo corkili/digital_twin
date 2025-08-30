@@ -1,6 +1,7 @@
 package com.digitaltwin.alarm.controller;
 
 import com.digitaltwin.alarm.entity.Alarm;
+import com.digitaltwin.alarm.entity.AlarmState;
 import com.digitaltwin.alarm.service.AlarmQueryService;
 import com.digitaltwin.websocket.model.WebSocketResponse;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +82,43 @@ public class AlarmController {
         } catch (Exception e) {
             log.error("获取所有告警失败: {}", e.getMessage(), e);
             return WebSocketResponse.error("获取所有告警失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 根据告警状态获取告警
+     * 
+     * @param state 告警状态
+     * @return 告警列表
+     */
+    @GetMapping("/state/{state}")
+    public WebSocketResponse<List<Alarm>> getAlarmsByState(@PathVariable AlarmState state) {
+        try {
+            List<Alarm> alarms = alarmQueryService.getAlarmsByState(state);
+            return WebSocketResponse.success(alarms);
+        } catch (Exception e) {
+            log.error("根据告警状态获取告警失败: {}", e.getMessage(), e);
+            return WebSocketResponse.error("获取告警失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 根据告警状态和设备ID获取告警
+     * 
+     * @param state 告警状态
+     * @param deviceId 设备ID
+     * @return 告警列表
+     */
+    @GetMapping("/state/{state}/device/{deviceId}")
+    public WebSocketResponse<List<Alarm>> getAlarmsByStateAndDeviceId(
+            @PathVariable AlarmState state, 
+            @PathVariable Long deviceId) {
+        try {
+            List<Alarm> alarms = alarmQueryService.getAlarmsByStateAndDeviceId(state, deviceId);
+            return WebSocketResponse.success(alarms);
+        } catch (Exception e) {
+            log.error("根据告警状态和设备ID获取告警失败: {}", e.getMessage(), e);
+            return WebSocketResponse.error("获取告警失败: " + e.getMessage());
         }
     }
 }

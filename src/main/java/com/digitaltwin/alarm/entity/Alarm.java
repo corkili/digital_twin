@@ -39,8 +39,15 @@ public class Alarm {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
+    @Column(name = "state")
+    @Enumerated(EnumType.STRING)
+    private AlarmState state = AlarmState.UNCONFIRMED;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (state == null) {
+            state = AlarmState.UNCONFIRMED;
+        }
     }
 }
