@@ -2,9 +2,13 @@ package com.digitaltwin.alarm.repository;
 
 import com.digitaltwin.alarm.entity.Alarm;
 import com.digitaltwin.alarm.entity.AlarmState;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -14,4 +18,13 @@ public interface AlarmRepository extends JpaRepository<Alarm, Long> {
     List<Alarm> findBySensorIdOrderByTimestampDesc(String sensorId);
     List<Alarm> findByStateOrderByTimestampDesc(AlarmState state);
     List<Alarm> findByStateAndDeviceIdOrderByTimestampDesc(AlarmState state, Long deviceId);
+
+    @Query("SELECT a FROM Alarm a WHERE a.createdAt >= :startTime AND a.createdAt <= :endTime ORDER BY a.createdAt DESC")
+    List<Alarm> findByTimeRange(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    @Query("SELECT a FROM Alarm a WHERE a.createdAt >= :startTime AND a.createdAt <= :endTime ORDER BY a.createdAt DESC")
+    List<Alarm> findByTimeRangeWithPagination(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime, Pageable pageable);
+
+    @Query("SELECT COUNT(a) FROM Alarm a WHERE a.createdAt >= :startTime AND a.createdAt <= :endTime")
+    Long countByTimeRange(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 }

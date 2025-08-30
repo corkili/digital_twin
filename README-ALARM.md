@@ -64,6 +64,22 @@ GET /api/alarms/state/{state}
 GET /api/alarms/state/{state}/device/{deviceId}
 ```
 
+#### 7. 根据时间范围查询告警总次数
+```bash
+GET /api/alarms/count?timeRange={timeRange}
+```
+参数说明：
+- timeRange: 时间范围，可选值为"今日"、"本周"、"本月"、"全年"
+
+#### 8. 根据时间范围查询告警列表
+```bash
+GET /api/alarms/list?timeRange={timeRange}&pageNum={pageNum}&pageCount={pageCount}
+```
+参数说明：
+- timeRange: 时间范围，可选值为"今日"、"本周"、"本月"、"全年"
+- pageNum: 页码，从1开始
+- pageCount: 每页数量
+
 ### 创建点位并配置告警
 
 #### 数值型点位告警配置示例
