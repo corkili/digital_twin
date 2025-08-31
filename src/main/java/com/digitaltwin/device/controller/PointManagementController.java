@@ -4,6 +4,7 @@ import com.digitaltwin.device.dto.ApiResponse;
 import com.digitaltwin.device.dto.device.CreatePointRequest;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
+import com.digitaltwin.device.dto.device.AlarmSettingRequest;
 import com.digitaltwin.device.service.PointService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -105,6 +106,21 @@ public class PointManagementController {
             return ResponseEntity.ok(ApiResponse.success("Point deleted successfully", null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to delete point: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 设置告警
+     * @param request 告警设置请求
+     * @return 操作结果
+     */
+    @PostMapping("/alarm")
+    public ResponseEntity<ApiResponse> setAlarm(@RequestBody AlarmSettingRequest request) {
+        try {
+            pointService.setAlarm(request);
+            return ResponseEntity.ok(ApiResponse.success("Alarm setting updated successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to update alarm setting: " + e.getMessage()));
         }
     }
 }

@@ -53,9 +53,7 @@ public class TDengineService {
         // 创建表
         String createTableSQL = "CREATE TABLE IF NOT EXISTS sensor_data (" +
                 "ts TIMESTAMP, " +
-                "id BINARY(64), " +
-                "heat_flux DOUBLE, " +
-                "cooling_water_in_temp DOUBLE" +
+                "id BINARY(64)" +
                 ")";
 
         try (PreparedStatement stmt = connection.prepareStatement(createTableSQL)) {
@@ -69,13 +67,11 @@ public class TDengineService {
             return;
         }
 
-        String insertSQL = "INSERT INTO sensor_data (ts, id, heat_flux, cooling_water_in_temp) VALUES (?, ?, ?, ?)";
+        String insertSQL = "INSERT INTO sensor_data (ts, id) VALUES (?, ?)";
 
         try (PreparedStatement stmt = connection.prepareStatement(insertSQL)) {
             stmt.setTimestamp(1, new java.sql.Timestamp(sensorData.getTimestamp()));
             stmt.setString(2, sensorData.getID());
-            stmt.setDouble(3, sensorData.getHeatFlux());
-            stmt.setDouble(4, sensorData.getCoolingWaterInTemp());
             stmt.execute();
             log.debug("传感器数据已保存到TDengine: {}", sensorData);
         } catch (SQLException e) {
