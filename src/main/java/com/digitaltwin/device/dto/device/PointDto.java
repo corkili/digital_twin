@@ -16,4 +16,5 @@ public class PointDto {
     private Double lowerLowLimit;
     private PointPublishMethod publishMethod;
     private Long deviceId;
+    private String deviceName;
 }
