@@ -1,10 +1,11 @@
 package com.digitaltwin.device.service;
 
+import com.digitaltwin.device.dto.device.DeviceDto;
 import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.entity.Channel;
-import com.digitaltwin.device.dto.device.DeviceDto;
 import com.digitaltwin.device.repository.DeviceRepository;
 import com.digitaltwin.device.repository.ChannelRepository;
+import com.digitaltwin.device.service.DeviceOperationLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class DeviceService {
     
     private final DeviceRepository deviceRepository;
     private final ChannelRepository channelRepository;
+    private final DeviceOperationLogService deviceOperationLogService;
     
     /**
      * 创建Device
@@ -41,6 +43,15 @@ public class DeviceService {
         device.setChannel(channel);
         
         Device savedDevice = deviceRepository.save(device);
+        
+        // 记录操作日志
+        deviceOperationLogService.logDeviceOperation(
+                savedDevice.getId(), 
+                savedDevice.getName(), 
+                "CREATE", 
+                "创建设备: " + savedDevice.getName()
+        );
+        
         log.info("创建Device成功，ID: {}", savedDevice.getId());
         return new DeviceDto(savedDevice);
     }
@@ -85,6 +96,10 @@ public class DeviceService {
         Device existingDevice = deviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Device不存在，ID: " + id));
         
+        String oldName = existingDevice.getName();
+        String oldDescription = existingDevice.getDescription();
+        String oldChannelName = existingDevice.getChannel() != null ? existingDevice.getChannel().getName() : null;
+        
         // 检查关联的Channel是否存在
         Channel channel = channelRepository.findById(channelId)
                 .orElseThrow(() -> new RuntimeException("Channel不存在，ID: " + channelId));
@@ -95,6 +110,31 @@ public class DeviceService {
         existingDevice.setChannel(channel);
         
         Device updatedDevice = deviceRepository.save(existingDevice);
+        
+        // 记录操作日志
+        StringBuilder description = new StringBuilder("更新设备详情: ");
+        if (!oldName.equals(device.getName())) {
+            description.append("名称从 '").append(oldName).append("' 更新为 '").append(device.getName()).append("'; ");
+        }
+        if (!oldDescription.equals(device.getDescription())) {
+            description.append("描述从 '").append(oldDescription).append("' 更新为 '").append(device.getDescription()).append("'; ");
+        }
+        if (!oldChannelName.equals(channel.getName())) {
+            description.append("通道从 '").append(oldChannelName).append("' 更新为 '").append(channel.getName()).append("'; ");
+        }
+        
+        // 如果没有任何变更，则记录基本信息更新
+        if (description.toString().equals("更新设备详情: ")) {
+            description.append("设备基本信息更新");
+        }
+        
+        deviceOperationLogService.logDeviceOperation(
+                id, 
+                updatedDevice.getName(), 
+                "UPDATE", 
+                description.toString()
+        );
+        
         log.info("更新Device成功，ID: {}", id);
         return new DeviceDto(updatedDevice);
     }
@@ -104,11 +144,19 @@ public class DeviceService {
      * @param id Device ID
      */
     public void deleteDevice(Long id) {
-        if (!deviceRepository.existsById(id)) {
-            throw new RuntimeException("Device不存在，ID: " + id);
-        }
+        Device device = deviceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Device不存在，ID: " + id));
         
         deviceRepository.deleteById(id);
+        
+        // 记录操作日志
+        deviceOperationLogService.logDeviceOperation(
+                id, 
+                device.getName(), 
+                "DELETE", 
+                "删除设备: " + device.getName()
+        );
+        
         log.info("删除Device成功，ID: {}", id);
     }
     
