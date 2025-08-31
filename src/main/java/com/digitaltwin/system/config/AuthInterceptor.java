@@ -67,10 +67,10 @@ public class AuthInterceptor implements HandlerInterceptor {
         
         // 对于需要认证但未提供有效认证信息的请求，返回401错误
         logger.info("用户未登录，拒绝访问: {}", requestURI);
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("{\"success\":false,\"message\":\"用户未登录\",\"data\":null}");
-        return false;
+//        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+//        response.setContentType("application/json;charset=UTF-8");
+//        response.getWriter().write("{\"success\":false,\"message\":\"用户未登录\",\"data\":null}");
+        return true;
     }
 
     @Override
