@@ -11,6 +11,8 @@ import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.repository.ChannelRepository;
 import com.digitaltwin.device.repository.DeviceRepository;
 import com.digitaltwin.device.repository.PointRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -145,6 +147,20 @@ public class PointService {
         return pointRepository.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 分页查询分组内的点位列表，支持通过点位名称和设备名称搜索
+     *
+     * @param groupId 分组ID
+     * @param pointName 点位名称（可选）
+     * @param deviceName 设备名称（可选）
+     * @param pageable 分页参数
+     * @return 点位分页列表
+     */
+    public Page<PointDto> getPointsByGroupWithFilters(Long groupId, String pointName, String deviceName, Pageable pageable) {
+        Page<Point> points = pointRepository.findPointsByGroupAndFilters(groupId, pointName, deviceName, pageable);
+        return points.map(this::convertToDto);
     }
 
     /**
