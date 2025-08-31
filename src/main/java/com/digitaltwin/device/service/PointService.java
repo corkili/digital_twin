@@ -156,6 +156,15 @@ public class PointService {
     }
 
     /**
+     * 获取点位总数
+     *
+     * @return 点位总数
+     */
+    public long getPointCount() {
+        return pointRepository.count();
+    }
+
+    /**
      * 分页查询分组内的点位列表，支持通过点位名称和设备名称搜索
      *
      * @param groupId 分组ID
@@ -251,6 +260,23 @@ public class PointService {
         Point point = pointRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Point not found with id: " + id));
         pointRepository.delete(point);
+    }
+
+    /**
+     * 根据点位ID查询其所在分组的所有点位信息
+     *
+     * @param pointId 点位ID
+     * @return 同一分组内的所有点位列表
+     */
+    public List<PointDto> getPointsInSameGroup(Long pointId) {
+        // 检查点位是否存在
+        pointRepository.findById(pointId)
+                .orElseThrow(() -> new RuntimeException("Point not found with id: " + pointId));
+        
+        List<Point> points = pointRepository.findPointsInSameGroup(pointId);
+        return points.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
     }
 
     /**

@@ -78,6 +78,20 @@ public class PointManagementController {
     }
     
     /**
+     * 获取点位总数
+     * @return 点位总数
+     */
+    @GetMapping("/count")
+    public ResponseEntity<ApiResponse> getPointCount() {
+        try {
+            long count = pointService.getPointCount();
+            return ResponseEntity.ok(ApiResponse.success("Point count retrieved successfully", count));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve point count: " + e.getMessage()));
+        }
+    }
+    
+    /**
      * 更新点位
      * @param id 点位ID
      * @param request 更新点位请求
@@ -107,4 +121,20 @@ public class PointManagementController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to delete point: " + e.getMessage()));
         }
     }
+    
+    /**
+     * 根据点位ID查询其所在分组的所有点位信息
+     * @param pointId 点位ID
+     * @return 同一分组内的所有点位列表
+     */
+    @GetMapping("/{pointId}/group-points")
+    public ResponseEntity<ApiResponse> getPointsInSameGroup(@PathVariable Long pointId) {
+        try {
+            List<PointDto> points = pointService.getPointsInSameGroup(pointId);
+            return ResponseEntity.ok(ApiResponse.success("Points in same group retrieved successfully", points));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve points in same group: " + e.getMessage()));
+        }
+    }
+    
 }
