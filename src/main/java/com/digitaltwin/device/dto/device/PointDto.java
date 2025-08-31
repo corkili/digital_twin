@@ -2,6 +2,7 @@ package com.digitaltwin.device.dto.device;
 
 import com.digitaltwin.device.consts.PointPublishMethod;
 import lombok.Data;
+import java.time.LocalDateTime;
 
 @Data
 public class PointDto {
@@ -17,4 +18,12 @@ public class PointDto {
     private PointPublishMethod publishMethod;
     private Long deviceId;
     private String deviceName;
+    
+    // 审计字段
+    private Long createdBy;
+    private String createdByName;
+    private LocalDateTime createdAt;
+    private Long updatedBy;
+    private String updatedByName;
+    private LocalDateTime updatedAt;
 }

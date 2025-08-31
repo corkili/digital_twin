@@ -7,6 +7,8 @@ import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.entity.Group;
 import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.service.GroupService;
+import com.digitaltwin.system.dto.UserDto;
+import com.digitaltwin.system.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 public class GroupController {
     
     private final GroupService groupService;
+    private final UserService userService;
     
     /**
      * 创建分组
@@ -230,6 +233,26 @@ public class GroupController {
         if (point.getDevice() != null) {
             dto.setDeviceId(point.getDevice().getId());
         }
+        
+        // 设置审计字段
+        dto.setCreatedBy(point.getCreatedBy());
+        dto.setCreatedAt(point.getCreatedAt());
+        dto.setUpdatedBy(point.getUpdatedBy());
+        dto.setUpdatedAt(point.getUpdatedAt());
+        
+        // 设置创建人和修改人的用户名
+        if (point.getCreatedBy() != null) {
+            userService.findById(point.getCreatedBy()).ifPresent(userDto -> 
+                dto.setCreatedByName(userDto.getUsername())
+            );
+        }
+        
+        if (point.getUpdatedBy() != null) {
+            userService.findById(point.getUpdatedBy()).ifPresent(userDto -> 
+                dto.setUpdatedByName(userDto.getUsername())
+            );
+        }
+        
         return dto;
     }
 }

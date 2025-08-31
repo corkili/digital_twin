@@ -5,6 +5,7 @@ import lombok.Data;
 import javax.persistence.*;
 
 import com.digitaltwin.device.entity.Channel;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -34,4 +35,32 @@ public class Point {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private Group group;
+    
+    // 审计字段
+    @Column(name = "created_by")
+    private Long createdBy;
+    
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_by")
+    private Long updatedBy;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        // 创建时，如果创建人不为空，更新人也设置为创建人
+        if (createdBy != null && updatedBy == null) {
+            updatedBy = createdBy;
+        }
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

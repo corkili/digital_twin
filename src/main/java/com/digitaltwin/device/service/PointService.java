@@ -10,6 +10,9 @@ import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.repository.ChannelRepository;
 import com.digitaltwin.device.repository.DeviceRepository;
 import com.digitaltwin.device.repository.PointRepository;
+import com.digitaltwin.system.entity.User;
+import com.digitaltwin.system.service.UserService;
+import com.digitaltwin.system.util.SecurityContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -33,6 +36,7 @@ public class PointService {
     private final ChannelRepository channelRepository;
     private final DeviceRepository deviceRepository;
     private final OpcUaConfigService opcUaConfigService;
+    private final UserService userService;
 
     /**
      * 创建点位
@@ -52,6 +56,12 @@ public class PointService {
         point.setLowerLimit(request.getLowerLimit());
         point.setLowerLowLimit(request.getLowerLowLimit());
         point.setPublishMethod(request.getPublishMethod());
+
+        // 从SecurityContext获取当前用户作为创建人
+        User currentUser = SecurityContext.getCurrentUser();
+        if (currentUser != null) {
+            point.setCreatedBy(currentUser.getId());
+        }
 
         if (request.getDeviceId() == null) {
             throw new RuntimeException("Device not found with id: " + request.getDeviceId());
@@ -180,6 +190,12 @@ public class PointService {
         point.setLowerLowLimit(request.getLowerLowLimit());
         point.setPublishMethod(request.getPublishMethod());
 
+        // 从SecurityContext获取当前用户作为修改人
+        User currentUser = SecurityContext.getCurrentUser();
+        if (currentUser != null) {
+            point.setUpdatedBy(currentUser.getId());
+        }
+
         if (request.getDeviceId() == null) {
             throw new RuntimeException("Device not found with id: " + request.getDeviceId());
         }
@@ -258,6 +274,26 @@ public class PointService {
         if (point.getDevice() != null) {
             dto.setDeviceId(point.getDevice().getId());
         }
+        
+        // 设置审计字段
+        dto.setCreatedBy(point.getCreatedBy());
+        dto.setCreatedAt(point.getCreatedAt());
+        dto.setUpdatedBy(point.getUpdatedBy());
+        dto.setUpdatedAt(point.getUpdatedAt());
+        
+        // 设置创建人和修改人的用户名
+        if (point.getCreatedBy() != null) {
+            userService.findById(point.getCreatedBy()).ifPresent(userDto -> 
+                dto.setCreatedByName(userDto.getUsername())
+            );
+        }
+        
+        if (point.getUpdatedBy() != null) {
+            userService.findById(point.getUpdatedBy()).ifPresent(userDto -> 
+                dto.setUpdatedByName(userDto.getUsername())
+            );
+        }
+        
         return dto;
     }
 }
