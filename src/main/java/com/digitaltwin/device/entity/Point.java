@@ -24,6 +24,7 @@ public class Point {
     private Double upperHighLimit;
     private Double lowerLimit;
     private Double lowerLowLimit;
+    private Boolean stateAlarm;
     
     @Enumerated(EnumType.STRING)
     private PointPublishMethod publishMethod;

@@ -1,5 +1,6 @@
 package com.digitaltwin.websocket.service;
 
+import com.digitaltwin.alarm.service.AlarmAnalysisService;
 import com.digitaltwin.websocket.config.RabbitMQConfig;
 import com.digitaltwin.websocket.model.SensorData;
 import com.digitaltwin.websocket.model.WebSocketResponse;
@@ -21,6 +22,7 @@ public class RabbitMQConsumerService {
 
     private final WebSocketPushService webSocketPushService;
     private final TDengineService tdengineService;
+    private final AlarmAnalysisService alarmAnalysisService;
     /**
      * 监听传感器数据队列
      * 确保按消费顺序推送消息到WebSocket
@@ -47,12 +49,14 @@ public class RabbitMQConsumerService {
             // 保存到TDengine
             tdengineService.saveSensorData(sensorData);
             
+            // 异步进行告警分析
+            alarmAnalysisService.analyzeSensorData(sensorData);
+            
             // 创建WebSocket响应
             WebSocketResponse<SensorData> response = WebSocketResponse.success(sensorData);
             
             // 推送到WebSocket
             webSocketPushService.pushToSubscribers(response);
-
 
             
             log.debug("成功推送传感器数据到WebSocket: {}", sensorData);

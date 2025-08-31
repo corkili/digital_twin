@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Repository
 public interface PointRepository extends JpaRepository<Point, Long> {
-    Optional<Point> findByIdentity(String identity);
+    List<Point> findByIdentity(String identity);
     
     @Query("SELECT p FROM Point p WHERE p.group.id = :groupId " +
            "AND (:pointName IS NULL OR p.identity LIKE %:pointName%) " +
@@ -24,7 +24,13 @@ public interface PointRepository extends JpaRepository<Point, Long> {
         @Param("deviceName") String deviceName,
         Pageable pageable
     );
-    
+
+    @Query("SELECT p FROM Point p WHERE p.identity = :identity AND p.device.id = :deviceId")
+    Optional<Point> findByIdentityAndDeviceId(@Param("identity") String identity, @Param("deviceId") Long deviceId);
+
+    @Query("SELECT p FROM Point p WHERE p.identity IN :identities")
+    List<Point> findByIdentityIn(@Param("identities") List<String> identities);
+
     /**
      * 根据点位ID查询其所在分组的所有点位
      * @param pointId 点位ID

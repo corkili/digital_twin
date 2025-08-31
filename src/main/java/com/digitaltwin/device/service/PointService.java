@@ -4,6 +4,7 @@ import com.digitaltwin.device.dto.OpcUaConfigData;
 import com.digitaltwin.device.dto.device.CreatePointRequest;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
+import com.digitaltwin.device.dto.device.AlarmSettingRequest;
 import com.digitaltwin.device.entity.Channel;
 import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.entity.Point;
@@ -139,8 +140,11 @@ public class PointService {
      * @return 点位DTO
      */
     public PointDto getPointByIdentity(String identity) {
-        Point point = pointRepository.findByIdentity(identity)
-                .orElseThrow(() -> new RuntimeException("Point not found with identity: " + identity));
+        List<Point> points = pointRepository.findByIdentity(identity);
+        if (points.isEmpty()) {
+            throw new RuntimeException("Point not found with identity: " + identity);
+        }
+        Point point = points.get(0); // 取第一个匹配的点位
         return convertToDto(point);
     }
 
@@ -263,6 +267,86 @@ public class PointService {
     }
 
     /**
+     * 设置告警
+     *
+     * @param request 告警设置请求
+     */
+    public void setAlarm(AlarmSettingRequest request) {
+        // 检查是否启用告警
+        if (request.getAlarmable() == null || !request.getAlarmable()) {
+            // 如果未启用告警，则只更新alarmable字段
+            if (request.getId() != null && request.getId() != 0) {
+                // 根据点位ID设置告警
+                Point point = pointRepository.findById(request.getId())
+                        .orElseThrow(() -> new RuntimeException("Point not found with id: " + request.getId()));
+                point.setAlarmable(false);
+                pointRepository.save(point);
+            } else if (request.getIdentity() != null && !request.getIdentity().isEmpty() && request.getDeviceId() != null && request.getDeviceId() != 0) {
+                // 根据设备ID和点位identity设置告警
+                Point point = pointRepository.findByIdentityAndDeviceId(request.getIdentity(), request.getDeviceId())
+                        .orElseThrow(() -> new RuntimeException("Point not found with identity: " + request.getIdentity() + " and deviceId: " + request.getDeviceId()));
+                point.setAlarmable(false);
+                pointRepository.save(point);
+            } else if (request.getIdentity() != null && !request.getIdentity().isEmpty()) {
+                // 设置所有相应点位的告警配置
+                List<Point> points = pointRepository.findByIdentity(request.getIdentity());
+                if (points.isEmpty()) {
+                    throw new RuntimeException("Points not found with identity: " + request.getIdentity());
+                }
+                for (Point point : points) {
+                    point.setAlarmable(false);
+                }
+                pointRepository.saveAll(points);
+            } else {
+                throw new RuntimeException("Invalid request parameters");
+            }
+            return;
+        }
+
+        // 如果启用告警，则更新所有告警相关字段
+        if (request.getId() != null && request.getId() != 0) {
+            // 根据点位ID设置告警
+            Point point = pointRepository.findById(request.getId())
+                    .orElseThrow(() -> new RuntimeException("Point not found with id: " + request.getId()));
+            point.setAlarmable(request.getAlarmable());
+            point.setUpperLimit(request.getUpperLimit());
+            point.setUpperHighLimit(request.getUpperHighLimit());
+            point.setLowerLimit(request.getLowerLimit());
+            point.setLowerLowLimit(request.getLowerLowLimit());
+            point.setStateAlarm(request.getStateAlarm());
+            pointRepository.save(point);
+        } else if (request.getIdentity() != null && !request.getIdentity().isEmpty() && request.getDeviceId() != null && request.getDeviceId() != 0) {
+            // 根据设备ID和点位identity设置告警
+            Point point = pointRepository.findByIdentityAndDeviceId(request.getIdentity(), request.getDeviceId())
+                    .orElseThrow(() -> new RuntimeException("Point not found with identity: " + request.getIdentity() + " and deviceId: " + request.getDeviceId()));
+            point.setAlarmable(request.getAlarmable());
+            point.setUpperLimit(request.getUpperLimit());
+            point.setUpperHighLimit(request.getUpperHighLimit());
+            point.setLowerLimit(request.getLowerLimit());
+            point.setLowerLowLimit(request.getLowerLowLimit());
+            point.setStateAlarm(request.getStateAlarm());
+            pointRepository.save(point);
+        } else if (request.getIdentity() != null && !request.getIdentity().isEmpty()) {
+            // 设置所有相应点位的告警配置
+            List<Point> points = pointRepository.findByIdentity(request.getIdentity());
+            if (points.isEmpty()) {
+                throw new RuntimeException("Points not found with identity: " + request.getIdentity());
+            }
+            for (Point point : points) {
+                point.setAlarmable(request.getAlarmable());
+                point.setUpperLimit(request.getUpperLimit());
+                point.setUpperHighLimit(request.getUpperHighLimit());
+                point.setLowerLimit(request.getLowerLimit());
+                point.setLowerLowLimit(request.getLowerLowLimit());
+                point.setStateAlarm(request.getStateAlarm());
+            }
+            pointRepository.saveAll(points);
+        } else {
+            throw new RuntimeException("Invalid request parameters");
+        }
+    }
+
+    /**
      * 根据点位ID查询其所在分组的所有点位信息
      *
      * @param pointId 点位ID
@@ -272,7 +356,7 @@ public class PointService {
         // 检查点位是否存在
         pointRepository.findById(pointId)
                 .orElseThrow(() -> new RuntimeException("Point not found with id: " + pointId));
-        
+
         List<Point> points = pointRepository.findPointsInSameGroup(pointId);
         return points.stream()
                 .map(this::convertToDto)
@@ -300,26 +384,26 @@ public class PointService {
         if (point.getDevice() != null) {
             dto.setDeviceId(point.getDevice().getId());
         }
-        
+
         // 设置审计字段
         dto.setCreatedBy(point.getCreatedBy());
         dto.setCreatedAt(point.getCreatedAt());
         dto.setUpdatedBy(point.getUpdatedBy());
         dto.setUpdatedAt(point.getUpdatedAt());
-        
+
         // 设置创建人和修改人的用户名
         if (point.getCreatedBy() != null) {
-            userService.findById(point.getCreatedBy()).ifPresent(userDto -> 
+            userService.findById(point.getCreatedBy()).ifPresent(userDto ->
                 dto.setCreatedByName(userDto.getUsername())
             );
         }
-        
+
         if (point.getUpdatedBy() != null) {
-            userService.findById(point.getUpdatedBy()).ifPresent(userDto -> 
+            userService.findById(point.getUpdatedBy()).ifPresent(userDto ->
                 dto.setUpdatedByName(userDto.getUsername())
             );
         }
-        
+
         return dto;
     }
 }

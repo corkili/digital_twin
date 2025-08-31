@@ -24,27 +24,21 @@ public class SensorData {
     @JsonProperty("ID")
     private String ID;
     
-    @JsonProperty("HeatFlux")
-    private Double HeatFlux;
-    
-    @JsonProperty("CoolingWater_In_Temp")
-    private Double CoolingWaterInTemp;
-    
     @JsonProperty("Timestamp")
     private Long Timestamp;
     
-    // 用于存储未知字段的Map
-    private Map<String, Object> unknownFields = new HashMap<>();
+    // 用于存储点位数据的Map
+    private Map<String, Object> PointDataMap = new HashMap<>();
     
     @JsonAnySetter
-    public void setUnknownField(String key, Object value) {
-        if (unknownFields == null) {
-            unknownFields = new HashMap<>();
+    public void setPointData(String key, Object value) {
+        if (PointDataMap == null) {
+            PointDataMap = new HashMap<>();
         }
-        unknownFields.put(key, value);
+        PointDataMap.put(key, value);
     }
 
     public boolean IsValidSensorData() {
-        return this.HeatFlux != null && this.CoolingWaterInTemp != null;
+        return this.PointDataMap != null && !this.PointDataMap.isEmpty();
     }
 }
