@@ -1,9 +1,11 @@
 package com.digitaltwin.alarm.service;
 
+import com.digitaltwin.alarm.dto.AlarmNotificationDTO;
 import com.digitaltwin.alarm.entity.Alarm;
 import com.digitaltwin.alarm.repository.AlarmRepository;
 import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.websocket.model.SensorData;
+import com.digitaltwin.websocket.service.WebSocketPushService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -21,6 +23,7 @@ public class AlarmAnalysisService {
 
     private final PointCacheService pointCacheService;
     private final AlarmRepository alarmRepository;
+    private final WebSocketPushService webSocketPushService;
     
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
@@ -160,8 +163,38 @@ public class AlarmAnalysisService {
             log.info("生成告警: 设备={}, 点位={}, 类型={}, 值={}, 阈值={}", 
                     point.getDevice().getName(), point.getIdentity(), alarmType, pointValue, alarmThreshold);
             
+            // 通过WebSocket推送告警通知
+            pushAlarmNotification(alarm, point.getDevice().getName(), point.getIdentity());
+            
         } catch (Exception e) {
             log.error("创建告警记录时发生错误: {}", e.getMessage(), e);
         }
     }
+    
+    /**
+     * 推送告警通知到WebSocket
+     * 
+     * @param alarm 告警实体
+     * @param deviceName 设备名称
+     * @param pointIdentity 点位标识
+     */
+    private void pushAlarmNotification(Alarm alarm, String deviceName, String pointIdentity) {
+        try {
+            AlarmNotificationDTO alarmNotification = new AlarmNotificationDTO();
+            alarmNotification.setAlarmId(alarm.getId());
+            alarmNotification.setDeviceId(alarm.getDeviceId());
+            alarmNotification.setDeviceName(deviceName);
+            alarmNotification.setAlarmType(alarm.getAlarmType());
+            alarmNotification.setPointIdentity(pointIdentity);
+            
+            webSocketPushService.pushAlarmToSubscribers(
+                com.digitaltwin.websocket.model.WebSocketResponse.success(alarmNotification)
+            );
+            
+            log.debug("告警已推送到WebSocket主题: /topic/alarms");
+        } catch (Exception e) {
+            log.error("推送告警通知时发生错误: {}", e.getMessage(), e);
+        }
+    }
+
 }

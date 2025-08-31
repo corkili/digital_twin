@@ -27,4 +27,15 @@ public interface AlarmRepository extends JpaRepository<Alarm, Long> {
 
     @Query("SELECT COUNT(a) FROM Alarm a WHERE a.createdAt >= :startTime AND a.createdAt <= :endTime")
     Long countByTimeRange(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+    
+    Long countByDeviceId(Long deviceId);
+    
+    @Query("SELECT a FROM Alarm a WHERE a.deviceId = :deviceId ORDER BY a.createdAt DESC")
+    List<Alarm> findByDeviceIdWithPagination(@Param("deviceId") Long deviceId, Pageable pageable);
+    
+    @Query("SELECT a FROM Alarm a ORDER BY a.createdAt DESC")
+    List<Alarm> findAllWithPagination(Pageable pageable);
+    
+    @Query("SELECT a FROM Alarm a WHERE a.deviceId = :deviceId ORDER BY a.timestamp DESC")
+    List<Alarm> findLatestByDeviceId(@Param("deviceId") Long deviceId, Pageable pageable);
 }

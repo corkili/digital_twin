@@ -1,7 +1,9 @@
 package com.digitaltwin.alarm.service;
 
 import com.digitaltwin.alarm.entity.Alarm;
+import com.digitaltwin.alarm.entity.AlarmOperateLog;
 import com.digitaltwin.alarm.entity.AlarmState;
+import com.digitaltwin.alarm.repository.AlarmOperateLogRepository;
 import com.digitaltwin.alarm.repository.AlarmRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,7 @@ import java.util.Optional;
 public class AlarmOperationService {
     
     private final AlarmRepository alarmRepository;
+    private final AlarmOperateLogRepository alarmOperateLogRepository;
     
     /**
      * 确认告警
@@ -29,6 +32,13 @@ public class AlarmOperationService {
                 Alarm alarm = alarmOptional.get();
                 alarm.setState(AlarmState.CONFIRMED);
                 alarmRepository.save(alarm);
+                
+                // 保存操作日志
+                AlarmOperateLog operateLog = new AlarmOperateLog();
+                operateLog.setAlarmId(alarmId);
+                operateLog.setOperateAction("确认");
+                alarmOperateLogRepository.save(operateLog);
+                
                 log.info("告警 {} 已确认", alarmId);
                 return true;
             } else {
@@ -54,6 +64,13 @@ public class AlarmOperationService {
                 Alarm alarm = alarmOptional.get();
                 alarm.setState(AlarmState.IGNORED);
                 alarmRepository.save(alarm);
+                
+                // 保存操作日志
+                AlarmOperateLog operateLog = new AlarmOperateLog();
+                operateLog.setAlarmId(alarmId);
+                operateLog.setOperateAction("忽略");
+                alarmOperateLogRepository.save(operateLog);
+                
                 log.info("告警 {} 已忽略", alarmId);
                 return true;
             } else {

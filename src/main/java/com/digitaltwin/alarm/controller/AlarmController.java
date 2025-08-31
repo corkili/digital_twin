@@ -1,12 +1,16 @@
 package com.digitaltwin.alarm.controller;
 
 import com.digitaltwin.alarm.dto.AlarmCountResponse;
+import com.digitaltwin.alarm.dto.AlarmDetailResponse;
 import com.digitaltwin.alarm.dto.AlarmListResponse;
 import com.digitaltwin.alarm.entity.Alarm;
 import com.digitaltwin.alarm.entity.AlarmState;
+import com.digitaltwin.alarm.service.AlarmDetailService;
 import com.digitaltwin.alarm.service.AlarmQueryService;
 import com.digitaltwin.device.entity.Device;
+import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.repository.DeviceRepository;
+import com.digitaltwin.device.repository.PointRepository;
 import com.digitaltwin.websocket.model.WebSocketResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import java.util.Collections;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/alarms")
@@ -24,7 +30,9 @@ import java.util.stream.Collectors;
 public class AlarmController {
 
     private final AlarmQueryService alarmQueryService;
+    private final AlarmDetailService alarmDetailService;
     private final DeviceRepository deviceRepository;
+    private final PointRepository pointRepository;
 
     /**
      * 根据设备ID获取告警
@@ -154,19 +162,33 @@ public class AlarmController {
      * @param timeRange 时间范围（今日、本周、本月、全年）
      * @param pageNum 页码（从1开始）
      * @param pageCount 每页数量
+     * @param deviceId 设备ID（可选）
      * @return 告警列表
      */
     @GetMapping("/list")
     public WebSocketResponse<AlarmListResponse> getAlarmsByTimeRange(
-            @RequestParam String timeRange,
+            @RequestParam(required = false) String timeRange,
             @RequestParam int pageNum,
-            @RequestParam int pageCount) {
+            @RequestParam int pageCount,
+            @RequestParam(required = false) Long deviceId) {
         try {
-            // 获取总次数
-            Long totalCount = alarmQueryService.getAlarmCountByTimeRange(timeRange);
+            // 获取总次数和告警列表
+            Long totalCount;
+            List<Alarm> alarms;
             
-            // 获取告警列表
-            List<Alarm> alarms = alarmQueryService.getAlarmsByTimeRange(timeRange, pageNum, pageCount);
+            if (deviceId != null) {
+                // 根据设备ID查询
+                alarms = alarmQueryService.getAlarmsByDeviceIdWithPagination(deviceId, pageNum, pageCount);
+                totalCount = alarmQueryService.getAlarmCountByDeviceId(deviceId);
+            } else if (timeRange != null && !timeRange.isEmpty()) {
+                // 根据时间范围查询
+                totalCount = alarmQueryService.getAlarmCountByTimeRange(timeRange);
+                alarms = alarmQueryService.getAlarmsByTimeRange(timeRange, pageNum, pageCount);
+            } else {
+                // 查询所有告警
+                totalCount = alarmQueryService.getAllAlarmCount();
+                alarms = alarmQueryService.getAllAlarmsWithPagination(pageNum, pageCount);
+            }
             
             // 收集所有设备ID
             List<Long> deviceIds = alarms.stream()
@@ -181,6 +203,20 @@ public class AlarmController {
             java.util.Map<Long, String> deviceIdToNameMap = devices.stream()
                     .collect(Collectors.toMap(Device::getId, Device::getName));
             
+            // 收集所有点位ID
+            List<String> pointIds = alarms.stream()
+                    .map(Alarm::getPointId)
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+            
+            // 批量查询点位
+            List<Point> points = pointIds.isEmpty() ? Collections.emptyList() : pointRepository.findByIdentityIn(pointIds);
+            
+            // 创建点位ID到点位的映射
+            java.util.Map<String, Point> pointIdToPointMap = points.stream()
+                    .collect(Collectors.toMap(Point::getIdentity, point -> point));
+            
             // 转换为AlarmListResponse.AlarmListItem列表
             List<AlarmListResponse.AlarmListItem> alarmListItems = alarms.stream()
                     .map(alarm -> {
@@ -192,6 +228,17 @@ public class AlarmController {
                         } else {
                             item.setDeviceName("未知设备-" + alarm.getDeviceId());
                         }
+                        
+                        // 设置通道名称和点位名称
+                        Point point = pointIdToPointMap.get(alarm.getPointId());
+                        if (point != null) {
+                            item.setPointName(point.getIdentity());
+                            Device device = point.getDevice();
+                            if (device != null && device.getChannel() != null) {
+                                item.setChannelName(device.getChannel().getName());
+                            }
+                        }
+                        
                         return item;
                     })
                     .collect(Collectors.toList());
@@ -203,6 +250,46 @@ public class AlarmController {
         } catch (Exception e) {
             log.error("根据时间范围获取告警列表失败: {}", e.getMessage(), e);
             return WebSocketResponse.error("获取告警列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 根据告警ID获取告警详情
+     * 
+     * @param alarmId 告警ID
+     * @param needOperateLog 是否需要操作日志
+     * @param operateLogLimit 操作日志数量限制
+     * @return 告警详情
+     */
+    @GetMapping("/detail/{alarmId}")
+    public WebSocketResponse<AlarmDetailResponse> getAlarmDetail(
+            @PathVariable Long alarmId,
+            @RequestParam(defaultValue = "false") boolean needOperateLog,
+            @RequestParam(required = false) Integer operateLogLimit) {
+        try {
+            AlarmDetailResponse response = alarmDetailService.getAlarmDetail(alarmId, needOperateLog, operateLogLimit);
+            return WebSocketResponse.success(response);
+        } catch (Exception e) {
+            log.error("获取告警详情失败: {}", e.getMessage(), e);
+            return WebSocketResponse.error("获取告警详情失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 根据设备ID获取最新告警详情
+     * 
+     * @param deviceId 设备ID
+     * @return 告警详情
+     */
+    @GetMapping("/latest/device/{deviceId}")
+    public WebSocketResponse<AlarmDetailResponse> getLatestAlarmDetailByDeviceId(
+            @PathVariable Long deviceId) {
+        try {
+            AlarmDetailResponse response = alarmDetailService.getLatestAlarmDetailByDeviceId(deviceId);
+            return WebSocketResponse.success(response);
+        } catch (Exception e) {
+            log.error("获取设备最新告警详情失败: {}", e.getMessage(), e);
+            return WebSocketResponse.error("获取设备最新告警详情失败: " + e.getMessage());
         }
     }
 }

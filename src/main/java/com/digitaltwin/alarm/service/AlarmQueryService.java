@@ -3,6 +3,8 @@ package com.digitaltwin.alarm.service;
 import com.digitaltwin.alarm.entity.Alarm;
 import com.digitaltwin.alarm.entity.AlarmState;
 import com.digitaltwin.alarm.repository.AlarmRepository;
+import com.digitaltwin.device.entity.Point;
+import com.digitaltwin.device.repository.PointRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -19,6 +22,7 @@ import java.util.List;
 public class AlarmQueryService {
 
     private final AlarmRepository alarmRepository;
+    private final PointRepository pointRepository;
 
     /**
      * 根据设备ID获取告警
@@ -29,6 +33,39 @@ public class AlarmQueryService {
     public List<Alarm> getAlarmsByDeviceId(Long deviceId) {
         try {
             return alarmRepository.findByDeviceIdOrderByTimestampDesc(deviceId);
+        } catch (Exception e) {
+            log.error("根据设备ID获取告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取设备告警失败", e);
+        }
+    }
+    
+    /**
+     * 根据设备ID获取告警数量
+     * 
+     * @param deviceId 设备ID
+     * @return 告警数量
+     */
+    public Long getAlarmCountByDeviceId(Long deviceId) {
+        try {
+            return alarmRepository.countByDeviceId(deviceId);
+        } catch (Exception e) {
+            log.error("根据设备ID获取告警数量失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取设备告警数量失败", e);
+        }
+    }
+    
+    /**
+     * 根据设备ID获取告警（分页）
+     * 
+     * @param deviceId 设备ID
+     * @param pageNum 页码
+     * @param pageCount 每页数量
+     * @return 告警列表
+     */
+    public List<Alarm> getAlarmsByDeviceIdWithPagination(Long deviceId, int pageNum, int pageCount) {
+        try {
+            Pageable pageable = PageRequest.of(pageNum - 1, pageCount, Sort.by(Sort.Direction.DESC, "createdAt"));
+            return alarmRepository.findByDeviceIdWithPagination(deviceId, pageable);
         } catch (Exception e) {
             log.error("根据设备ID获取告警失败: {}", e.getMessage(), e);
             throw new RuntimeException("获取设备告警失败", e);
@@ -73,6 +110,37 @@ public class AlarmQueryService {
     public List<Alarm> getAllAlarms() {
         try {
             return alarmRepository.findAll();
+        } catch (Exception e) {
+            log.error("获取所有告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取所有告警失败", e);
+        }
+    }
+    
+    /**
+     * 获取所有告警数量
+     * 
+     * @return 告警数量
+     */
+    public Long getAllAlarmCount() {
+        try {
+            return alarmRepository.count();
+        } catch (Exception e) {
+            log.error("获取所有告警数量失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取所有告警数量失败", e);
+        }
+    }
+    
+    /**
+     * 获取所有告警（分页）
+     * 
+     * @param pageNum 页码
+     * @param pageCount 每页数量
+     * @return 告警列表
+     */
+    public List<Alarm> getAllAlarmsWithPagination(int pageNum, int pageCount) {
+        try {
+            Pageable pageable = PageRequest.of(pageNum - 1, pageCount, Sort.by(Sort.Direction.DESC, "createdAt"));
+            return alarmRepository.findAllWithPagination(pageable);
         } catch (Exception e) {
             log.error("获取所有告警失败: {}", e.getMessage(), e);
             throw new RuntimeException("获取所有告警失败", e);
@@ -148,6 +216,23 @@ public class AlarmQueryService {
         }
     }
 
+    /**
+     * 根据设备ID获取最新告警
+     * 
+     * @param deviceId 设备ID
+     * @return 最新告警
+     */
+    public Alarm getLatestAlarmByDeviceId(Long deviceId) {
+        try {
+            Pageable pageable = PageRequest.of(0, 1, Sort.by(Sort.Direction.DESC, "timestamp"));
+            List<Alarm> alarms = alarmRepository.findLatestByDeviceId(deviceId, pageable);
+            return alarms.isEmpty() ? null : alarms.get(0);
+        } catch (Exception e) {
+            log.error("根据设备ID获取最新告警失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取设备最新告警失败", e);
+        }
+    }
+    
     /**
      * 根据时间范围字符串获取开始和结束时间
      * 

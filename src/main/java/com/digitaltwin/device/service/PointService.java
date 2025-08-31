@@ -4,6 +4,7 @@ import com.digitaltwin.device.dto.OpcUaConfigData;
 import com.digitaltwin.device.dto.device.CreatePointRequest;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
+import com.digitaltwin.device.dto.device.AlarmSettingRequest;
 import com.digitaltwin.device.entity.Channel;
 import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.entity.Point;
@@ -222,6 +223,86 @@ public class PointService {
         Point point = pointRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Point not found with id: " + id));
         pointRepository.delete(point);
+    }
+
+    /**
+     * 设置告警
+     *
+     * @param request 告警设置请求
+     */
+    public void setAlarm(AlarmSettingRequest request) {
+        // 检查是否启用告警
+        if (request.getAlarmable() == null || !request.getAlarmable()) {
+            // 如果未启用告警，则只更新alarmable字段
+            if (request.getId() != null && request.getId() != 0) {
+                // 根据点位ID设置告警
+                Point point = pointRepository.findById(request.getId())
+                        .orElseThrow(() -> new RuntimeException("Point not found with id: " + request.getId()));
+                point.setAlarmable(false);
+                pointRepository.save(point);
+            } else if (request.getIdentity() != null && !request.getIdentity().isEmpty() && request.getDeviceId() != null && request.getDeviceId() != 0) {
+                // 根据设备ID和点位identity设置告警
+                Point point = pointRepository.findByIdentityAndDeviceId(request.getIdentity(), request.getDeviceId())
+                        .orElseThrow(() -> new RuntimeException("Point not found with identity: " + request.getIdentity() + " and deviceId: " + request.getDeviceId()));
+                point.setAlarmable(false);
+                pointRepository.save(point);
+            } else if (request.getIdentity() != null && !request.getIdentity().isEmpty()) {
+                // 设置所有相应点位的告警配置
+                List<Point> points = pointRepository.findByIdentity(request.getIdentity());
+                if (points.isEmpty()) {
+                    throw new RuntimeException("Points not found with identity: " + request.getIdentity());
+                }
+                for (Point point : points) {
+                    point.setAlarmable(false);
+                }
+                pointRepository.saveAll(points);
+            } else {
+                throw new RuntimeException("Invalid request parameters");
+            }
+            return;
+        }
+
+        // 如果启用告警，则更新所有告警相关字段
+        if (request.getId() != null && request.getId() != 0) {
+            // 根据点位ID设置告警
+            Point point = pointRepository.findById(request.getId())
+                    .orElseThrow(() -> new RuntimeException("Point not found with id: " + request.getId()));
+            point.setAlarmable(request.getAlarmable());
+            point.setUpperLimit(request.getUpperLimit());
+            point.setUpperHighLimit(request.getUpperHighLimit());
+            point.setLowerLimit(request.getLowerLimit());
+            point.setLowerLowLimit(request.getLowerLowLimit());
+            point.setStateAlarm(request.getStateAlarm());
+            pointRepository.save(point);
+        } else if (request.getIdentity() != null && !request.getIdentity().isEmpty() && request.getDeviceId() != null && request.getDeviceId() != 0) {
+            // 根据设备ID和点位identity设置告警
+            Point point = pointRepository.findByIdentityAndDeviceId(request.getIdentity(), request.getDeviceId())
+                    .orElseThrow(() -> new RuntimeException("Point not found with identity: " + request.getIdentity() + " and deviceId: " + request.getDeviceId()));
+            point.setAlarmable(request.getAlarmable());
+            point.setUpperLimit(request.getUpperLimit());
+            point.setUpperHighLimit(request.getUpperHighLimit());
+            point.setLowerLimit(request.getLowerLimit());
+            point.setLowerLowLimit(request.getLowerLowLimit());
+            point.setStateAlarm(request.getStateAlarm());
+            pointRepository.save(point);
+        } else if (request.getIdentity() != null && !request.getIdentity().isEmpty()) {
+            // 设置所有相应点位的告警配置
+            List<Point> points = pointRepository.findByIdentity(request.getIdentity());
+            if (points.isEmpty()) {
+                throw new RuntimeException("Points not found with identity: " + request.getIdentity());
+            }
+            for (Point point : points) {
+                point.setAlarmable(request.getAlarmable());
+                point.setUpperLimit(request.getUpperLimit());
+                point.setUpperHighLimit(request.getUpperHighLimit());
+                point.setLowerLimit(request.getLowerLimit());
+                point.setLowerLowLimit(request.getLowerLowLimit());
+                point.setStateAlarm(request.getStateAlarm());
+            }
+            pointRepository.saveAll(points);
+        } else {
+            throw new RuntimeException("Invalid request parameters");
+        }
     }
 
     /**

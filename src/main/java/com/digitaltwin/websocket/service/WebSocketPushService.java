@@ -37,6 +37,22 @@ public class WebSocketPushService {
     }
 
     /**
+     * 推送告警消息到所有订阅了告警数据主题的客户端
+     * 
+     * @param response 要推送的响应数据
+     * @param <T> 响应数据的类型
+     */
+    public <T> void pushAlarmToSubscribers(WebSocketResponse<T> response) {
+        try {
+            messagingTemplate.convertAndSend("/topic/alarm-data", response);
+            log.debug("告警消息已推送到WebSocket主题: /topic/alarm-data");
+            
+        } catch (Exception e) {
+            log.error("推送告警消息到WebSocket时发生错误: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
      * 推送消息到特定用户
      * 
      * @param username 目标用户名
