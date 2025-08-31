@@ -1,10 +1,13 @@
 package com.digitaltwin.device.dto.device;
 
 import com.digitaltwin.device.consts.PointPublishMethod;
+import com.digitaltwin.device.entity.Point;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Data
+@NoArgsConstructor
 public class PointDto {
     private Long id;
     private String identity;
@@ -26,4 +29,26 @@ public class PointDto {
     private Long updatedBy;
     private String updatedByName;
     private LocalDateTime updatedAt;
+
+    public PointDto(Point point) {
+        this.id = point.getId();
+        this.identity = point.getIdentity();
+        this.writeable = point.getWriteable();
+        this.unit = point.getUnit();
+        this.alarmable = point.getAlarmable();
+        this.upperLimit = point.getUpperLimit();
+        this.upperHighLimit = point.getUpperHighLimit();
+        this.lowerLimit = point.getLowerLimit();
+        this.lowerLowLimit = point.getLowerLowLimit();
+        this.publishMethod = point.getPublishMethod();
+        if (point.getDevice() != null) {
+            this.deviceId = point.getDevice().getId();
+        }
+        
+        // 设置审计字段
+        this.createdBy = point.getCreatedBy();
+        this.createdAt = point.getCreatedAt();
+        this.updatedBy = point.getUpdatedBy();
+        this.updatedAt = point.getUpdatedAt();
+    }
 }
