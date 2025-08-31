@@ -2,6 +2,7 @@ package com.digitaltwin.device.entity;
 
 import com.digitaltwin.device.consts.PointPublishMethod;
 import lombok.Data;
+import lombok.ToString;
 import javax.persistence.*;
 
 import com.digitaltwin.device.entity.Channel;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "point")
+@ToString(exclude = {"device", "group"})  // 排除device和group字段避免toString循环引用
 public class Point {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

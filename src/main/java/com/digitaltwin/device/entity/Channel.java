@@ -2,12 +2,14 @@ package com.digitaltwin.device.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.ToString;
 import javax.persistence.*;
 import java.util.List;
 
 @Data
 @Entity
 @Table(name = "channel")
+@ToString(exclude = {"devices"})  // 排除devices字段避免toString循环引用
 public class Channel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

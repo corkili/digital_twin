@@ -1,6 +1,7 @@
 package com.digitaltwin.device.entity;
 
 import lombok.Data;
+import lombok.ToString;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -18,6 +19,7 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "device")
+@ToString(exclude = {"channel", "points"})  // 排除channel和points字段避免toString循环引用
 public class Device {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

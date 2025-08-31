@@ -40,6 +40,7 @@ public class PointCacheService {
      * 确保程序启动失败如果缓存初始化失败
      */
     @EventListener(ApplicationReadyEvent.class)
+    @Transactional
     public void onApplicationReady() {
         try {
             log.info("开始初始化点位缓存...");

@@ -25,7 +25,7 @@ import java.util.Collections;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/alarms")
+@RequestMapping("/alarms")
 @RequiredArgsConstructor
 public class AlarmController {
 
@@ -213,9 +213,9 @@ public class AlarmController {
             // 批量查询点位
             List<Point> points = pointIds.isEmpty() ? Collections.emptyList() : pointRepository.findByIdentityIn(pointIds);
             
-            // 创建点位ID到点位的映射
+            // 创建点位ID到点位的映射，处理重复键的情况 TODO: AI修改，不置可否
             java.util.Map<String, Point> pointIdToPointMap = points.stream()
-                    .collect(Collectors.toMap(Point::getIdentity, point -> point));
+                    .collect(Collectors.toMap(Point::getIdentity, point -> point, (existing, replacement) -> existing));
             
             // 转换为AlarmListResponse.AlarmListItem列表
             List<AlarmListResponse.AlarmListItem> alarmListItems = alarms.stream()

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/alarms")
+@RequestMapping("/alarms")
 @RequiredArgsConstructor
 public class AlarmOperationController {
     
