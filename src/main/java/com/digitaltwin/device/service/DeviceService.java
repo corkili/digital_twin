@@ -9,6 +9,8 @@ import com.digitaltwin.device.service.DeviceOperationLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import com.digitaltwin.system.util.SecurityContext;
+import com.digitaltwin.system.entity.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +43,12 @@ public class DeviceService {
         
         // 设置关联关系
         device.setChannel(channel);
+        // 设置审计创建人/修改人
+        User currentUser = SecurityContext.getCurrentUser();
+        if (currentUser != null) {
+            device.setCreatedBy(currentUser.getId());
+            device.setUpdatedBy(currentUser.getId());
+        }
         
         Device savedDevice = deviceRepository.save(device);
         
@@ -108,6 +116,11 @@ public class DeviceService {
         existingDevice.setName(device.getName());
         existingDevice.setDescription(device.getDescription());
         existingDevice.setChannel(channel);
+        // 设置审计修改人
+        User currentUser = SecurityContext.getCurrentUser();
+        if (currentUser != null) {
+            existingDevice.setUpdatedBy(currentUser.getId());
+        }
         
         Device updatedDevice = deviceRepository.save(existingDevice);
         

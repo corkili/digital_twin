@@ -6,6 +6,8 @@ import com.digitaltwin.device.repository.ChannelRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import com.digitaltwin.system.util.SecurityContext;
+import com.digitaltwin.system.entity.User;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -57,6 +59,13 @@ public class ChannelService {
             log.error("ThingsBoard配置保存失败： ", e);
         }
         channel.setOpcUaConfig(opcUaConfigString);
+
+        // 设置审计创建人/修改人
+        User currentUser = SecurityContext.getCurrentUser();
+        if (currentUser != null) {
+            channel.setCreatedBy(currentUser.getId());
+            channel.setUpdatedBy(currentUser.getId());
+        }
         Channel savedChannel = channelRepository.save(channel);
 
 
@@ -106,6 +115,11 @@ public class ChannelService {
         }
 
         channel.setId(id);
+        // 设置审计修改人
+        User currentUser = SecurityContext.getCurrentUser();
+        if (currentUser != null) {
+            channel.setUpdatedBy(currentUser.getId());
+        }
         Channel updatedChannel = channelRepository.save(channel);
         log.info("更新Channel成功，ID: {}", id);
         return updatedChannel;

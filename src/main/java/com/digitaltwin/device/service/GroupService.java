@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import com.digitaltwin.system.util.SecurityContext;
+import com.digitaltwin.system.entity.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +41,12 @@ public class GroupService {
         Group group = new Group();
         group.setName(name);
         group.setDescription(description);
+        // 设置审计创建人/修改人
+        User currentUser = SecurityContext.getCurrentUser();
+        if (currentUser != null) {
+            group.setCreatedBy(currentUser.getId());
+            group.setUpdatedBy(currentUser.getId());
+        }
         return groupRepository.save(group);
     }
 
