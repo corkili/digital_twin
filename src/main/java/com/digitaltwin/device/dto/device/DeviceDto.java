@@ -4,6 +4,7 @@ import com.digitaltwin.device.entity.Device;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 import java.util.List;
 
@@ -15,7 +16,15 @@ public class DeviceDto {
     private String description;
     private ChannelDto channel;
     private List<PointDto> points;
-
+    
+    // 审计字段
+    private Long createdBy;
+    private String createdByName;
+    private LocalDateTime createdAt;
+    private Long updatedBy;
+    private String updatedByName;
+    private LocalDateTime updatedAt;
+    
     public DeviceDto(Device device) {
         this.id = device.getId();
         this.name = device.getName();
@@ -28,5 +37,11 @@ public class DeviceDto {
                     .map(PointDto::new)
                     .collect(Collectors.toList());
         }
+        
+        // 设置审计字段
+        this.createdBy = device.getCreatedBy();
+        this.createdAt = device.getCreatedAt();
+        this.updatedBy = device.getUpdatedBy();
+        this.updatedAt = device.getUpdatedAt();
     }
 }

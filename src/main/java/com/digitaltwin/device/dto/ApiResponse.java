@@ -9,18 +9,34 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class ApiResponse {
     private boolean success;
+    private int code;
     private String message;
     private Object data;
     
     public static ApiResponse success(String message, Object data) {
-        return new ApiResponse(true, message, data);
+        ApiResponse response = new ApiResponse();
+        response.setSuccess(true);
+        response.setCode(200);
+        response.setMessage(message);
+        response.setData(data);
+        return response;
     }
     
     public static ApiResponse success(Object data) {
-        return new ApiResponse(true, "操作成功", data);
+        ApiResponse response = new ApiResponse();
+        response.setSuccess(true);
+        response.setCode(200);
+        response.setMessage("操作成功");
+        response.setData(data);
+        return response;
     }
     
     public static ApiResponse error(String message) {
-        return new ApiResponse(false, message, null);
+        ApiResponse response = new ApiResponse();
+        response.setSuccess(false);
+        response.setCode(10001);
+        response.setMessage(message);
+        response.setData(null);
+        return response;
     }
 }

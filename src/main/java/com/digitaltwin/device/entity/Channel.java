@@ -3,7 +3,9 @@ package com.digitaltwin.device.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.ToString;
+
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -34,4 +36,34 @@ public class Channel {
 
     @Column(length = 2000)
     private String opcUaConfig;
+    
+    // 审计字段
+    @Column(name = "created_by")
+    private Long createdBy;
+    
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_by")
+    private Long updatedBy;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    /**
+     * 在实体持久化之前执行
+     */
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+    
+    /**
+     * 在实体更新之前执行
+     */
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
