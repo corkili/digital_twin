@@ -116,15 +116,30 @@ public class ChannelManagementController {
     /**
      * 删除Channel
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteChannel(@PathVariable Long id) {
+    @DeleteMapping("/{ids}")
+    public ResponseEntity<ApiResponse> deleteChannel(@PathVariable List<Long> ids) {
         try {
-            channelService.deleteChannel(id);
-            return ResponseEntity.ok(ApiResponse.success("删除成功"));
+            channelService.deleteChannels(ids);
+            return ResponseEntity.ok(ApiResponse.success("批量删除成功"));
         } catch (Exception e) {
-            log.error("删除Channel失败: {}", e.getMessage(), e);
+            log.error("批量删除Channel失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("删除Channel失败: " + e.getMessage()));
+                    .body(ApiResponse.error("批量删除Channel失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 批量删除Channel
+     */
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteChannels(@RequestBody List<Long> ids) {
+        try {
+            channelService.deleteChannels(ids);
+            return ResponseEntity.ok(ApiResponse.success("批量删除成功"));
+        } catch (Exception e) {
+            log.error("批量删除Channel失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("批量删除Channel失败: " + e.getMessage()));
         }
     }
 }

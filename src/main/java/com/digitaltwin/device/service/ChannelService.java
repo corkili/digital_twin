@@ -140,6 +140,27 @@ public class ChannelService {
     }
 
     /**
+     * 批量删除Channel
+     *
+     * @param ids Channel ID列表
+     */
+    public void deleteChannels(List<Long> ids) {
+        List<Channel> channels = channelRepository.findAllById(ids);
+        
+        if (channels.size() != ids.size()) {
+            // 找出不存在的ID
+            List<Long> existingIds = channels.stream().map(Channel::getId).collect(Collectors.toList());
+            List<Long> notFoundIds = ids.stream()
+                    .filter(id -> !existingIds.contains(id))
+                    .collect(Collectors.toList());
+            throw new RuntimeException("以下Channel不存在: " + notFoundIds);
+        }
+        
+        channelRepository.deleteAll(channels);
+        log.info("批量删除Channel成功，IDs: {}", ids);
+    }
+
+    /**
      * 根据服务器URL查找Channel
      *
      * @param serverUrl 服务器URL
