@@ -22,6 +22,7 @@ public class PointDto {
     private PointPublishMethod publishMethod;
     private Long deviceId;
     private String deviceName;
+    private Double hz; // 采集频率
     
     // 审计字段
     private Long createdBy;
@@ -48,6 +49,7 @@ public class PointDto {
         this.lowerLimit = point.getLowerLimit();
         this.lowerLowLimit = point.getLowerLowLimit();
         this.publishMethod = point.getPublishMethod();
+        this.hz = point.getHz();
         if (point.getDevice() != null) {
             this.deviceId = point.getDevice().getId();
         }

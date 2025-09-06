@@ -183,4 +183,13 @@ public class DeviceService {
                 .map(DeviceDto::new)
                 .collect(Collectors.toList());
     }
+    
+    /**
+     * 获取设备总数
+     *
+     * @return 设备总数
+     */
+    public long getDeviceCount() {
+        return deviceRepository.count();
+    }
 }

@@ -27,6 +27,7 @@ public class Point {
     private Double lowerLimit;
     private Double lowerLowLimit;
     private Boolean stateAlarm;
+    private Double hz; // 采集频率
     
     @Enumerated(EnumType.STRING)
     private PointPublishMethod publishMethod;

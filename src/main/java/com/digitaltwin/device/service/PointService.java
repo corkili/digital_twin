@@ -57,6 +57,7 @@ public class PointService {
         point.setLowerLimit(request.getLowerLimit());
         point.setLowerLowLimit(request.getLowerLowLimit());
         point.setPublishMethod(request.getPublishMethod());
+        point.setHz(request.getHz()); // 设置采集频率
 
         // 从SecurityContext获取当前用户作为创建人
         User currentUser = SecurityContext.getCurrentUser();
@@ -203,6 +204,7 @@ public class PointService {
         point.setLowerLimit(request.getLowerLimit());
         point.setLowerLowLimit(request.getLowerLowLimit());
         point.setPublishMethod(request.getPublishMethod());
+        point.setHz(request.getHz()); // 更新采集频率
 
         // 从SecurityContext获取当前用户作为修改人
         User currentUser = SecurityContext.getCurrentUser();

@@ -6,6 +6,10 @@ import com.digitaltwin.device.dto.device.FailureStatisticsDto;
 import com.digitaltwin.device.service.PointFailureRecordService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,12 +54,18 @@ public class PointFailureRecordController {
     }
     
     /**
-     * 获取所有故障记录
+     * 分页获取所有故障记录
      */
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllFailureRecords() {
+    public ResponseEntity<ApiResponse> getAllFailureRecords(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "failureTime") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
         try {
-            List<PointFailureRecordDto> records = pointFailureRecordService.getAllFailureRecords();
+            Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+            Pageable pageable = PageRequest.of(page, size, sort);
+            Page<PointFailureRecordDto> records = pointFailureRecordService.getAllFailureRecords(pageable);
             return ResponseEntity.ok(ApiResponse.success("查询成功", records));
         } catch (Exception e) {
             log.error("查询故障记录失败: {}", e.getMessage(), e);

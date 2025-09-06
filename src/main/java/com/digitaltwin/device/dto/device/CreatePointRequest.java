@@ -16,4 +16,5 @@ public class CreatePointRequest {
     private Double lowerLowLimit;
     private PointPublishMethod publishMethod;
     private Long deviceId;
+    private Double hz; // 采集频率
 }

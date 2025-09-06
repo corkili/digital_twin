@@ -137,4 +137,20 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("删除Device失败: " + e.getMessage()));
         }
     }
+    
+    /**
+     * 获取设备总数
+     * @return 设备总数
+     */
+    @GetMapping("/count")
+    public ResponseEntity<ApiResponse> getDeviceCount() {
+        try {
+            long count = deviceService.getDeviceCount();
+            return ResponseEntity.ok(ApiResponse.success("设备总数查询成功", count));
+        } catch (Exception e) {
+            log.error("查询设备总数失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("查询设备总数失败: " + e.getMessage()));
+        }
+    }
 }
