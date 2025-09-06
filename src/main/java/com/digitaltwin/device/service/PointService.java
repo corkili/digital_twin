@@ -194,17 +194,40 @@ public class PointService {
         Point point = pointRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Point not found with id: " + id));
 
-        point.setIdentity(request.getIdentity());
-        point.setPath(request.getPath());
-        point.setWriteable(request.getWriteable());
-        point.setUnit(request.getUnit());
-        point.setAlarmable(request.getAlarmable());
-        point.setUpperLimit(request.getUpperLimit());
-        point.setUpperHighLimit(request.getUpperHighLimit());
-        point.setLowerLimit(request.getLowerLimit());
-        point.setLowerLowLimit(request.getLowerLowLimit());
-        point.setPublishMethod(request.getPublishMethod());
-        point.setHz(request.getHz()); // 更新采集频率
+        // 只有当字段不为null时才更新对应字段
+        if (request.getIdentity() != null) {
+            point.setIdentity(request.getIdentity());
+        }
+        if (request.getPath() != null) {
+            point.setPath(request.getPath());
+        }
+        if (request.getWriteable() != null) {
+            point.setWriteable(request.getWriteable());
+        }
+        if (request.getUnit() != null) {
+            point.setUnit(request.getUnit());
+        }
+        if (request.getAlarmable() != null) {
+            point.setAlarmable(request.getAlarmable());
+        }
+        if (request.getUpperLimit() != null) {
+            point.setUpperLimit(request.getUpperLimit());
+        }
+        if (request.getUpperHighLimit() != null) {
+            point.setUpperHighLimit(request.getUpperHighLimit());
+        }
+        if (request.getLowerLimit() != null) {
+            point.setLowerLimit(request.getLowerLimit());
+        }
+        if (request.getLowerLowLimit() != null) {
+            point.setLowerLowLimit(request.getLowerLowLimit());
+        }
+        if (request.getPublishMethod() != null) {
+            point.setPublishMethod(request.getPublishMethod());
+        }
+        if (request.getHz() != null) {
+            point.setHz(request.getHz());
+        }
 
         // 从SecurityContext获取当前用户作为修改人
         User currentUser = SecurityContext.getCurrentUser();
@@ -212,15 +235,12 @@ public class PointService {
             point.setUpdatedBy(currentUser.getId());
         }
 
-        if (request.getDeviceId() == null) {
-            throw new RuntimeException("Device not found with id: " + request.getDeviceId());
+        Device device = point.getDevice(); // 获取点位当前关联的设备
+        if (request.getDeviceId() != null) {
+            device = deviceRepository.findById(request.getDeviceId())
+                    .orElseThrow(() -> new RuntimeException("Device not found with id: " + request.getDeviceId()));
+            point.setDevice(device);
         }
-
-//        Channel channel = channelRepository.findById(request.getChannelId())
-//                .orElseThrow(() -> new RuntimeException("Channel not found with id: " + request.getChannelId()));
-        Device device = deviceRepository.findById(request.getDeviceId())
-                .orElseThrow(() -> new RuntimeException("Device not found with id: " + request.getDeviceId()));
-        point.setDevice(device);
 
         OpcUaConfigData configData = null;
 
@@ -248,10 +268,11 @@ public class PointService {
         List<String> totalConnectorNames = channelRepository.findAll().stream()
                 .map(Channel::getName)
                 .collect(Collectors.toList());
-        totalConnectorNames.removeIf(x->device.getChannel().getName().equals(x));
+        String deviceChannelName = device.getChannel().getName();
+        totalConnectorNames.removeIf(x -> deviceChannelName.equals(x));
         opcUaConfigService.activeConnectors(totalConnectorNames);
         String result = opcUaConfigService.sendOpcUaConfig(configData);
-        totalConnectorNames.add(device.getChannel().getName());
+        totalConnectorNames.add(deviceChannelName);
         opcUaConfigService.activeConnectors(totalConnectorNames);
 
         Point updatedPoint = pointRepository.save(point);
@@ -385,6 +406,7 @@ public class PointService {
         dto.setLowerLimit(point.getLowerLimit());
         dto.setLowerLowLimit(point.getLowerLowLimit());
         dto.setPublishMethod(point.getPublishMethod());
+        dto.setHz(point.getHz());
         if (point.getDevice() != null) {
             dto.setDeviceId(point.getDevice().getId());
         }
