@@ -13,9 +13,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * 启动Spring Boot应用程序
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.digitaltwin.websocket", "com.digitaltwin.device", "com.digitaltwin.system", "com.digitaltwin.alarm"})
-@EnableJpaRepositories(basePackages = {"com.digitaltwin.device.repository", "com.digitaltwin.system.repository", "com.digitaltwin.alarm.repository"})
-@EntityScan(basePackages = {"com.digitaltwin.device.entity", "com.digitaltwin.system.entity", "com.digitaltwin.alarm.entity"})
+@ComponentScan(basePackages = {"com.digitaltwin.websocket", "com.digitaltwin.device", "com.digitaltwin.system", "com.digitaltwin.alarm", "com.digitaltwin.simulation"})
+@EnableJpaRepositories(basePackages = {"com.digitaltwin.device.repository", "com.digitaltwin.system.repository", "com.digitaltwin.alarm.repository", "com.digitaltwin.simulation.repository"})
+@EntityScan(basePackages = {"com.digitaltwin.device.entity", "com.digitaltwin.system.entity", "com.digitaltwin.alarm.entity", "com.digitaltwin.simulation.entity"})
 @EnableAsync
 @EnableScheduling
 public class DigitalTwinWebsocketApplication {
