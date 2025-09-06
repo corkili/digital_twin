@@ -11,6 +11,8 @@ public class AlarmDetailResponse {
     private Long alarmId;
     private Long timestamp;
     private String formattedTimestamp;
+    private Long endTimestamp;
+    private String formattedEndTimestamp;
     private Long sensorTimestamp;
     private String formattedSensorTimestamp;
     private String alarmType;

@@ -48,6 +48,8 @@ public class AlarmDetailService {
             response.setAlarmId(alarm.getId());
             response.setTimestamp(alarm.getTimestamp());
             response.setFormattedTimestamp(formatTimestamp(alarm.getTimestamp()));
+            response.setEndTimestamp(alarm.getEndTimestamp());
+            response.setFormattedEndTimestamp(formatTimestamp(alarm.getEndTimestamp()));
             response.setSensorTimestamp(alarm.getSensorTimestamp());
             response.setFormattedSensorTimestamp(formatTimestamp(alarm.getSensorTimestamp()));
             response.setAlarmType(alarm.getAlarmType());
@@ -102,6 +104,8 @@ public class AlarmDetailService {
             response.setAlarmId(latestAlarm.getId());
             response.setTimestamp(latestAlarm.getTimestamp());
             response.setFormattedTimestamp(formatTimestamp(latestAlarm.getTimestamp()));
+            response.setEndTimestamp(latestAlarm.getEndTimestamp());
+            response.setFormattedEndTimestamp(formatTimestamp(latestAlarm.getEndTimestamp()));
             response.setSensorTimestamp(latestAlarm.getSensorTimestamp());
             response.setFormattedSensorTimestamp(formatTimestamp(latestAlarm.getSensorTimestamp()));
             response.setAlarmType(latestAlarm.getAlarmType());

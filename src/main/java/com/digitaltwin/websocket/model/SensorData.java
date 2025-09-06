@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.AllArgsConstructor;
 
 import java.util.HashMap;
@@ -19,6 +20,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Slf4j
 public class SensorData {
     
     @JsonProperty("ID")
@@ -49,5 +51,22 @@ public class SensorData {
 
     public boolean IsValidSensorData() {
         return this.PointDataMap != null && !this.PointDataMap.isEmpty();
+    }
+
+    public Long getRealTimestamp() {
+        Long timestamp = null;
+        if (this.ts != null) {
+            try {
+                timestamp = Long.parseLong(this.ts);
+            } catch (NumberFormatException e) {
+                log.warn("无法解析ts字段为时间戳: {}", this.ts);
+            }
+        }
+            
+        // 如果无法从SensorData获取ts，则使用SensorData的Timestamp字段
+        if (timestamp == null) {
+            timestamp = this.Timestamp;
+        }
+        return timestamp;
     }
 }
