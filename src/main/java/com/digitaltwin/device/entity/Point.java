@@ -52,6 +52,16 @@ public class Point {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    // 数据采集统计字段
+    @Column(name = "last_collection_time")
+    private LocalDateTime lastCollectionTime;
+    
+    @Column(name = "total_collection_duration")
+    private Long totalCollectionDuration; // 总采集时长(秒)
+    
+    @Column(name = "total_collection_count")
+    private Long totalCollectionCount; // 总采集条数
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

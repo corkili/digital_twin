@@ -26,6 +26,15 @@ public class SensorData {
     
     @JsonProperty("Timestamp")
     private Long Timestamp;
+
+    @JsonProperty("deviceName")
+    private String deviceName;
+
+    @JsonProperty("ts")
+    private String ts;
+
+    @JsonProperty("deviceType")
+    private String deviceType;
     
     // 用于存储点位数据的Map
     private Map<String, Object> PointDataMap = new HashMap<>();

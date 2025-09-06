@@ -194,6 +194,7 @@ public class PointService {
                 .orElseThrow(() -> new RuntimeException("Point not found with id: " + id));
 
         point.setIdentity(request.getIdentity());
+        point.setPath(request.getPath());
         point.setWriteable(request.getWriteable());
         point.setUnit(request.getUnit());
         point.setAlarmable(request.getAlarmable());
@@ -373,6 +374,7 @@ public class PointService {
         PointDto dto = new PointDto();
         dto.setId(point.getId());
         dto.setIdentity(point.getIdentity());
+        dto.setPath(point.getPath());
         dto.setWriteable(point.getWriteable());
         dto.setUnit(point.getUnit());
         dto.setAlarmable(point.getAlarmable());
@@ -403,6 +405,11 @@ public class PointService {
                 dto.setUpdatedByName(userDto.getUsername())
             );
         }
+        
+        // 设置数据采集统计字段
+        dto.setLastCollectionTime(point.getLastCollectionTime());
+        dto.setTotalCollectionDuration(point.getTotalCollectionDuration());
+        dto.setTotalCollectionCount(point.getTotalCollectionCount());
 
         return dto;
     }
