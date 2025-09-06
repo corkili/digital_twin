@@ -22,6 +22,8 @@ public class PointDto {
     private PointPublishMethod publishMethod;
     private Long deviceId;
     private String deviceName;
+    private Long groupId;
+    private String groupName;
     private Double hz; // 采集频率
     
     // 审计字段
@@ -52,6 +54,13 @@ public class PointDto {
         this.hz = point.getHz();
         if (point.getDevice() != null) {
             this.deviceId = point.getDevice().getId();
+            this.deviceName = point.getDevice().getName();
+        }
+        
+        // 设置分组信息
+        if (point.getGroup() != null) {
+            this.groupId = point.getGroup().getId();
+            this.groupName = point.getGroup().getName();
         }
         
         // 设置审计字段

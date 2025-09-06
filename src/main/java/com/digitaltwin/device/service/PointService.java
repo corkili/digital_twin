@@ -5,6 +5,7 @@ import com.digitaltwin.device.dto.device.CreatePointRequest;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
 import com.digitaltwin.device.dto.device.AlarmSettingRequest;
+import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.entity.Channel;
 import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.entity.Point;
@@ -409,6 +410,7 @@ public class PointService {
         dto.setHz(point.getHz());
         if (point.getDevice() != null) {
             dto.setDeviceId(point.getDevice().getId());
+            dto.setDeviceName(point.getDevice().getName());
         }
 
         // 设置审计字段
@@ -436,5 +438,33 @@ public class PointService {
         dto.setTotalCollectionCount(point.getTotalCollectionCount());
 
         return dto;
+    }
+
+    /**
+     * 统计每个设备内的点位数量
+     * @return 设备点位统计列表
+     */
+    public List<DevicePointCountDto> getPointCountByDevice() {
+        // 获取每个设备的点位数量统计
+        List<Object[]> countResults = pointRepository.countPointsByDevice();
+        
+        // 获取所有相关的设备信息
+        List<Long> deviceIds = countResults.stream()
+                .map(result -> (Long) result[0])
+                .collect(Collectors.toList());
+        
+        List<Device> devices = deviceRepository.findAllById(deviceIds);
+        java.util.Map<Long, String> deviceIdToNameMap = devices.stream()
+                .collect(Collectors.toMap(Device::getId, Device::getName));
+        
+        // 构造返回结果
+        return countResults.stream()
+                .map(result -> {
+                    Long deviceId = (Long) result[0];
+                    Long pointCount = (Long) result[1];
+                    String deviceName = deviceIdToNameMap.getOrDefault(deviceId, "未知设备");
+                    return new DevicePointCountDto(deviceId, deviceName, pointCount);
+                })
+                .collect(Collectors.toList());
     }
 }

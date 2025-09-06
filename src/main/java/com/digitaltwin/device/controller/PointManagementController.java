@@ -2,9 +2,11 @@ package com.digitaltwin.device.controller;
 
 import com.digitaltwin.device.dto.ApiResponse;
 import com.digitaltwin.device.dto.device.CreatePointRequest;
+import com.digitaltwin.device.dto.device.CreatePointRequest;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
 import com.digitaltwin.device.dto.device.AlarmSettingRequest;
+import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.service.PointService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -150,6 +152,20 @@ public class PointManagementController {
             return ResponseEntity.ok(ApiResponse.success("Points in same group retrieved successfully", points));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve points in same group: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 统计每个设备内的点位数量
+     * @return 设备点位统计列表
+     */
+    @GetMapping("/count-by-device")
+    public ResponseEntity<ApiResponse> getPointCountByDevice() {
+        try {
+            List<DevicePointCountDto> countList = pointService.getPointCountByDevice();
+            return ResponseEntity.ok(ApiResponse.success("Point count by device retrieved successfully", countList));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve point count by device: " + e.getMessage()));
         }
     }
 

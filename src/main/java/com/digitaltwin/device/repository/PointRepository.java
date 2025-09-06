@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -38,4 +39,11 @@ public interface PointRepository extends JpaRepository<Point, Long> {
      */
     @Query("SELECT p FROM Point p WHERE p.group.id = (SELECT p2.group.id FROM Point p2 WHERE p2.id = :pointId)")
     List<Point> findPointsInSameGroup(@Param("pointId") Long pointId);
+    
+    /**
+     * 统计每个设备内的点位数量
+     * @return 设备ID和点位数量的映射
+     */
+    @Query("SELECT p.device.id, COUNT(p) FROM Point p GROUP BY p.device.id")
+    List<Object[]> countPointsByDevice();
 }
