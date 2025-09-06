@@ -3,6 +3,7 @@ package com.digitaltwin.simulation.controller;
 import com.digitaltwin.device.dto.ApiResponse;
 import com.digitaltwin.simulation.dto.SimulationExperimentListDto;
 import com.digitaltwin.simulation.dto.ExperimentStepDto;
+import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.service.SimulationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,12 +47,12 @@ public class SimulationController {
      * 根据试验ID获取试验介绍
      * 
      * @param id 试验ID
-     * @return 试验介绍
+     * @return 试验名称和介绍
      */
     @GetMapping("/{id}/description")
     public ResponseEntity<ApiResponse> getExperimentDescription(@PathVariable Long id) {
         try {
-            Optional<String> description = simulationService.getExperimentDescription(id);
+            Optional<ExperimentDescriptionDto> description = simulationService.getExperimentDescription(id);
             if (description.isPresent()) {
                 return ResponseEntity.ok(ApiResponse.success("获取试验介绍成功", description.get()));
             } else {

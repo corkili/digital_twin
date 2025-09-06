@@ -4,6 +4,7 @@ import com.digitaltwin.simulation.dto.SimulationExperimentDto;
 import com.digitaltwin.simulation.dto.SimulationExperimentListDto;
 import com.digitaltwin.simulation.dto.SimulationStepNode;
 import com.digitaltwin.simulation.dto.ExperimentStepDto;
+import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.entity.SimulationExperiment;
 import com.digitaltwin.simulation.repository.SimulationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,12 +60,12 @@ public class SimulationService {
     /**
      * 根据ID获取试验介绍
      * @param id 试验ID
-     * @return 试验介绍
+     * @return 试验名称和介绍
      */
-    public Optional<String> getExperimentDescription(Long id) {
+    public Optional<ExperimentDescriptionDto> getExperimentDescription(Long id) {
         try {
             Optional<SimulationExperiment> experiment = simulationRepository.findById(id);
-            return experiment.map(SimulationExperiment::getDescription);
+            return experiment.map(exp -> new ExperimentDescriptionDto(exp.getName(), exp.getDescription()));
         } catch (Exception e) {
             log.error("根据ID获取试验介绍失败: {}", e.getMessage(), e);
             throw new RuntimeException("获取试验介绍失败", e);
