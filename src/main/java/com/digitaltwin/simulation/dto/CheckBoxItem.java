@@ -1,5 +1,6 @@
 package com.digitaltwin.simulation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -11,9 +12,15 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "复选框项")
 public class CheckBoxItem {
     
-    private String name;      // 复选框名称，如："氮气"
-    private String ue;        // 唯一标识，如："23"
-    private Boolean isCheck;  // 是否选中，如：false
+    @Schema(description = "复选框名称", example = "氮气")
+    private String name;
+
+    @Schema(description = "唯一标识（UE/业务ID）", example = "23")
+    private String ue;
+
+    @Schema(description = "是否选中", example = "false")
+    private Boolean isCheck;
 }

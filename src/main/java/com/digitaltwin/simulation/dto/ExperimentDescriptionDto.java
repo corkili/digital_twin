@@ -1,5 +1,6 @@
 package com.digitaltwin.simulation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -11,8 +12,12 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "试验描述信息")
 public class ExperimentDescriptionDto {
     
-    private String name;         // 试验名称
-    private String description;  // 试验描述
+    @Schema(description = "试验名称", example = "传感器校准试验")
+    private String name;
+    
+    @Schema(description = "试验详细描述", example = "该试验旨在验证传感器在不同环境下的校准精度和稳定性")
+    private String description;
 }

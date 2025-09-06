@@ -1,5 +1,6 @@
 package com.digitaltwin.simulation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -11,9 +12,15 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "步骤设置信息")
 public class StepSetting {
     
-    private String prefix;    // 前缀文本，如："设置电动阀开度值:"
-    private String value;     // 设置值，如：""
-    private String suffix;    // 后缀文本，如："(按需)"
+    @Schema(description = "前缀文本", example = "设置电动阀开度值:")
+    private String prefix;
+
+    @Schema(description = "设置值", example = "50%")
+    private String value;
+
+    @Schema(description = "后缀文本", example = "(按需)")
+    private String suffix;
 }

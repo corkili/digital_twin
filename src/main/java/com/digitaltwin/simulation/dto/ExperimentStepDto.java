@@ -1,5 +1,6 @@
 package com.digitaltwin.simulation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -12,9 +13,15 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "试验步骤信息")
 public class ExperimentStepDto {
     
-    private Integer stepId;           // 步骤ID
-    private String stepName;          // 步骤名称
-    private List<RoleDto> roles;      // 角色列表
+    @Schema(description = "步骤ID", example = "1")
+    private Integer stepId;
+    
+    @Schema(description = "步骤名称", example = "传感器初始化")
+    private String stepName;
+    
+    @Schema(description = "步骤中包含的角色列表")
+    private List<RoleDto> roles;
 }

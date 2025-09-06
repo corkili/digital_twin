@@ -1,5 +1,6 @@
 package com.digitaltwin.simulation.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -13,19 +14,24 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "仿真步骤节点（支持子节点、设置、复选框、输入项）")
 public class SimulationStepNode {
     
-    // 基础属性
-    private String name;           // 节点名称
-    private String ue;             // 唯一标识
-    private List<SimulationStepNode> child;  // 子节点数组
+    @Schema(description = "节点名称", example = "设置参数")
+    private String name;
+
+    @Schema(description = "唯一标识（UE/业务ID）", example = "ue_setting_001")
+    private String ue;
+
+    @Schema(description = "子节点数组")
+    private List<SimulationStepNode> child;
     
-    // 设置功能
-    private StepSetting setting;  // 设置配置
+    @Schema(description = "设置配置（当节点为设置类型时有效)")
+    private StepSetting setting;
     
-    // 复选框功能  
-    private List<CheckBoxItem> checkBoxs;  // 复选框组
+    @Schema(description = "复选框组（当节点为复选框类型时有效)")
+    private List<CheckBoxItem> checkBoxs;
     
-    // 输入项功能
-    private List<InputItem> inputList;     // 输入项组
+    @Schema(description = "输入项组（当节点为输入项类型时有效)")
+    private List<InputItem> inputList;
 }

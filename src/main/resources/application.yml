@@ -90,6 +90,18 @@ management:
     health:
       show-details: always
 
+# SpringDoc OpenAPI配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: true
+
 # 自定义配置
 websocket:
   # 主题配置
