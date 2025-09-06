@@ -106,45 +106,8 @@ public class KnowledgeController {
                     .body(SimulationApiResponse.error("获取知识库详情失败: " + e.getMessage()));
         }
     }
-    
-    /**
-     * 根据状态获取知识库列表
-     * 
-     * @param status 状态
-     * @return 知识库列表
-     */
-    @GetMapping("/status/{status}")
-    public ResponseEntity<SimulationApiResponse<List<KnowledgeListDto>>> getKnowledgeByStatus(
-            @Parameter(description = "知识库状态") @PathVariable String status) {
-        try {
-            List<KnowledgeListDto> knowledgeList = knowledgeService.getKnowledgeByStatus(status);
-            return ResponseEntity.ok(SimulationApiResponse.success("获取知识库列表成功", knowledgeList));
-        } catch (Exception e) {
-            log.error("根据状态获取知识库列表失败: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(SimulationApiResponse.error("获取知识库列表失败: " + e.getMessage()));
-        }
-    }
-    
-    /**
-     * 搜索知识库
-     * 
-     * @param title 标题关键字
-     * @return 知识库列表
-     */
-    @GetMapping("/search")
-    public ResponseEntity<SimulationApiResponse<List<KnowledgeListDto>>> searchKnowledge(
-            @Parameter(description = "标题关键字", required = true) @RequestParam String title) {
-        try {
-            List<KnowledgeListDto> knowledgeList = knowledgeService.searchKnowledgeByTitle(title);
-            return ResponseEntity.ok(SimulationApiResponse.success("搜索知识库成功", knowledgeList));
-        } catch (Exception e) {
-            log.error("搜索知识库失败: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(SimulationApiResponse.error("搜索知识库失败: " + e.getMessage()));
-        }
-    }
-    
+
+
     /**
      * 更新知识库
      * 
@@ -196,34 +159,19 @@ public class KnowledgeController {
     }
     
     /**
-     * 全文搜索知识库（支持分页）
+     * 全文搜索知识库（仅 keyword 参数）
      * 搜索标题和目录名称
-     * 
+     *
      * @param keyword 搜索关键字
-     * @param page 页码（从0开始，默认0）
-     * @param size 每页数量（默认10，设为0返回全部结果）
-     * @param sortBy 排序字段（默认createdAt）
-     * @param sortDir 排序方向（asc/desc，默认desc）
-     * @return 搜索结果
+     * @return 搜索结果列表（不分页）
      */
-    @GetMapping("/fulltext-search")
+    @Operation(summary = "全文搜索知识库", description = "仅按keyword在标题和目录中搜索")
+    @GetMapping("/search")
     public ResponseEntity<SimulationApiResponse<KnowledgeListResponse>> fullTextSearch(
-            @Parameter(description = "搜索关键字", required = true) @RequestParam String keyword,
-            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "每页数量，设为0返回全部") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "排序字段") @RequestParam(defaultValue = "createdAt") String sortBy,
-            @Parameter(description = "排序方向 asc/desc") @RequestParam(defaultValue = "desc") String sortDir) {
+            @Parameter(description = "搜索关键字", required = true) @RequestParam String keyword) {
         try {
-            // 如果size为0，返回全部搜索结果
-            if (size == 0) {
-                List<KnowledgeDto> knowledgeList = knowledgeService.fullTextSearch(keyword);
-                KnowledgeListResponse response = KnowledgeListResponse.fromList(knowledgeList);
-                return ResponseEntity.ok(SimulationApiResponse.success("全文搜索成功", response));
-            }
-            
-            Page<KnowledgeDto> knowledgePage = knowledgeService.fullTextSearchWithPagination(
-                keyword, page, size, sortBy, sortDir);
-            KnowledgeListResponse response = KnowledgeListResponse.fromPage(knowledgePage);
+            List<KnowledgeDto> knowledgeList = knowledgeService.fullTextSearch(keyword);
+            KnowledgeListResponse response = KnowledgeListResponse.fromList(knowledgeList);
             return ResponseEntity.ok(SimulationApiResponse.success("全文搜索成功", response));
         } catch (Exception e) {
             log.error("全文搜索知识库失败: {}", e.getMessage(), e);
