@@ -33,9 +33,9 @@ public class AlarmListResponse {
         private String pointName;
         private String alarmThreshold;
         private Long alarmTimestamp;
-        private Long AlarmEndTimestamp;
+        private Long alarmEndTimestamp;
         private String alarmTime;
-        private String alaramEndTime;
+        private String alarmEndTime;
         private String alarmValue;
 
         public AlarmListItem() {}
@@ -48,7 +48,7 @@ public class AlarmListResponse {
             this.pointId = alarm.getPointId();
             this.alarmThreshold = alarm.getAlarmThreshold();
             this.alarmTimestamp = alarm.getTimestamp();
-            this.AlarmEndTimestamp = alarm.getEndTimestamp();
+            this.alarmEndTimestamp = alarm.getEndTimestamp();
             this.alarmValue = alarm.getPointValue();
             
             // 格式化时间
@@ -58,9 +58,9 @@ public class AlarmListResponse {
             }
             if (alarm.getEndTimestamp() != null) {
                 LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(alarm.getEndTimestamp()), ZoneId.systemDefault());
-                this.alaramEndTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                this.alarmEndTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             } else {
-                this.alaramEndTime = "持续告警中";
+                this.alarmEndTime = "持续告警中";
             }
         }
     }
