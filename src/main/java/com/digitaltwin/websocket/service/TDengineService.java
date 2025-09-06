@@ -10,7 +10,11 @@ import javax.annotation.PostConstruct;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -82,19 +86,7 @@ public class TDengineService {
             String deviceName = sensorData.getDeviceName();
             
             // 直接从sensorData对象获取ts字段作为时间戳
-            Long timestamp = null;
-            if (sensorData.getTs() != null) {
-                try {
-                    timestamp = Long.parseLong(sensorData.getTs());
-                } catch (NumberFormatException e) {
-                    log.warn("无法解析ts字段为时间戳: {}", sensorData.getTs());
-                }
-            }
-            
-            // 如果无法从SensorData获取ts，则使用SensorData的Timestamp字段
-            if (timestamp == null) {
-                timestamp = sensorData.getTimestamp();
-            }
+            Long timestamp = sensorData.getRealTimestamp();
             
             // 遍历所有点位数据
             if (sensorData.getPointDataMap() != null && timestamp != null) {
@@ -150,6 +142,47 @@ public class TDengineService {
                 log.error("恢复自动提交模式失败: {}", e.getMessage(), e);
             }
         }
+    }
+    
+    /**
+     * 根据时间范围、point_key和deviceName查询点位数据
+     * 
+     * @param startTime 开始时间戳
+     * @param endTime 结束时间戳
+     * @param pointKey 点位标识
+     * @param deviceName 设备名称
+     * @return 查询结果
+     */
+    public List<Map<String, Object>> querySensorDataByTimeRangeAndPointKeyAndDeviceName(long startTime, long endTime, String pointKey, String deviceName) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        if (connection == null) {
+            log.error("TDengine连接未初始化");
+            return result;
+        }
+        
+        // 使用子表名查询数据
+        String subTableName = "sensor_data_" + pointKey.replaceAll("[^a-zA-Z0-9_]", "_");
+        String querySQL = "SELECT ts, point_value FROM " + subTableName + " WHERE ts >= ? AND ts <= ? AND deviceName = ?";
+        
+        try (PreparedStatement stmt = connection.prepareStatement(querySQL)) {
+            stmt.setTimestamp(1, new java.sql.Timestamp(startTime));
+            stmt.setTimestamp(2, new java.sql.Timestamp(endTime));
+            stmt.setString(3, deviceName);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("ts", rs.getTimestamp("ts"));
+                    row.put("point_value", rs.getString("point_value"));
+                    result.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            log.error("查询传感器数据时出错: {}", e.getMessage(), e);
+        }
+        
+        return result;
     }
     
     /**

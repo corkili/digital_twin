@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -102,7 +103,23 @@ public class AlarmAnalysisService {
      */
     private void analyzeBooleanAlarm(SensorData sensorData, Point point, Boolean value, String stringValue) {
         if (point.getStateAlarm() != null && value.equals(point.getStateAlarm())) {
-            createAlarm(sensorData, point, stringValue, "状态告警", String.valueOf(point.getStateAlarm()));
+            // 检查是否存在未结束的告警
+            List<Alarm> unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
+                    point.getIdentity(), point.getDevice().getId(), "状态告警");
+            
+            if (unendedAlarms.isEmpty()) {
+                // 如果不存在未结束的告警，则创建新的告警
+                createAlarm(sensorData, point, stringValue, "状态告警", String.valueOf(point.getStateAlarm()));
+            } else {
+                // 如果存在未结束的告警，则更新lastSensorTimestamp
+                for (Alarm alarm : unendedAlarms) {
+                    alarm.setLastSensorTimestamp(sensorData.getRealTimestamp());
+                    alarmRepository.save(alarm);
+                }
+            }
+        } else {
+            // 如果不满足告警条件，检查是否存在未结束的告警并结束它
+            checkAndEndAlarm(sensorData, point, "状态告警");
         }
     }
     
@@ -115,24 +132,103 @@ public class AlarmAnalysisService {
      * @param stringValue 字符串值
      */
     private void analyzeNumericAlarm(SensorData sensorData, Point point, Double value, String stringValue) {
+        boolean alarmTriggered = false;
+        
         // 检查上上限告警
         if (point.getUpperHighLimit() != null && value > point.getUpperHighLimit()) {
-            createAlarm(sensorData, point, stringValue, "上上限告警", String.valueOf(point.getUpperHighLimit()));
+            handleNumericAlarm(sensorData, point, stringValue, "上上限告警", point.getUpperHighLimit());
+            alarmTriggered = true;
         }
         
         // 检查上限告警
         if (point.getUpperLimit() != null && value > point.getUpperLimit()) {
-            createAlarm(sensorData, point, stringValue, "上限告警", String.valueOf(point.getUpperLimit()));
+            handleNumericAlarm(sensorData, point, stringValue, "上限告警", point.getUpperLimit());
+            alarmTriggered = true;
         }
         
         // 检查下下限告警
         if (point.getLowerLowLimit() != null && value < point.getLowerLowLimit()) {
-            createAlarm(sensorData, point, stringValue, "下下限告警", String.valueOf(point.getLowerLowLimit()));
+            handleNumericAlarm(sensorData, point, stringValue, "下下限告警", point.getLowerLowLimit());
+            alarmTriggered = true;
         }
         
         // 检查下限告警
         if (point.getLowerLimit() != null && value < point.getLowerLimit()) {
-            createAlarm(sensorData, point, stringValue, "下限告警", String.valueOf(point.getLowerLimit()));
+            handleNumericAlarm(sensorData, point, stringValue, "下限告警", point.getLowerLimit());
+            alarmTriggered = true;
+        }
+        
+        // 如果没有触发任何告警，检查是否存在未结束的告警并结束它
+        if (!alarmTriggered) {
+            checkAndEndAlarm(sensorData, point, "数值告警");
+        }
+    }
+    
+    /**
+     * 处理数值类型告警
+     * 
+     * @param sensorData 传感器数据
+     * @param point 点位
+     * @param pointValue 点位值
+     * @param alarmType 告警类型
+     * @param alarmThreshold 告警阈值
+     */
+    private void handleNumericAlarm(SensorData sensorData, Point point, String pointValue, String alarmType, Double alarmThreshold) {
+        // 检查是否存在未结束的告警
+        List<Alarm> unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
+                point.getIdentity(), point.getDevice().getId(), alarmType);
+        
+        if (unendedAlarms.isEmpty()) {
+            // 如果不存在未结束的告警，则创建新的告警
+            createAlarm(sensorData, point, pointValue, alarmType, String.valueOf(alarmThreshold));
+        } else {
+            // 如果存在未结束的告警，则更新lastSensorTimestamp
+            for (Alarm alarm : unendedAlarms) {
+                alarm.setLastSensorTimestamp(sensorData.getRealTimestamp());
+                alarmRepository.save(alarm);
+            }
+        }
+    }
+    
+    /**
+     * 检查并结束告警
+     * 
+     * @param sensorData 传感器数据
+     * @param point 点位
+     * @param alarmType 告警类型
+     */
+    private void checkAndEndAlarm(SensorData sensorData, Point point, String alarmType) {
+        List<Alarm> unendedAlarms = new ArrayList<>();
+        
+        // 根据不同的告警类型查询未结束的告警
+        switch (alarmType) {
+            case "状态告警":
+                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
+                        point.getIdentity(), point.getDevice().getId(), alarmType);
+                break;
+            case "数值告警":
+                // 对于数值类型的告警，我们需要查询所有数值类型的未结束告警
+                // 这里简化处理，查询所有数值类型的告警
+                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
+                        point.getIdentity(), point.getDevice().getId(), "上上限告警");
+                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
+                        point.getIdentity(), point.getDevice().getId(), "上限告警"));
+                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
+                        point.getIdentity(), point.getDevice().getId(), "下下限告警"));
+                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
+                        point.getIdentity(), point.getDevice().getId(), "下限告警"));
+                break;
+            default:
+                // 默认情况，查询指定类型的未结束告警
+                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
+                        point.getIdentity(), point.getDevice().getId(), alarmType);
+                break;
+        }
+        
+        // 更新所有未结束的告警
+        for (Alarm alarm : unendedAlarms) {
+            alarm.setEndTimestamp(System.currentTimeMillis());
+            alarmRepository.save(alarm);
         }
     }
     
@@ -151,12 +247,13 @@ public class AlarmAnalysisService {
             Alarm alarm = new Alarm();
             alarm.setTimestamp(System.currentTimeMillis());
             alarm.setSensorId(sensorData.getID());
-            alarm.setSensorTimestamp(sensorData.getTimestamp());
+            alarm.setSensorTimestamp(sensorData.getRealTimestamp());
             alarm.setPointId(point.getIdentity());
             alarm.setPointValue(pointValue);
             alarm.setAlarmType(alarmType);
             alarm.setAlarmThreshold(alarmThreshold);
             alarm.setDeviceId(point.getDevice().getId());
+            alarm.setLastSensorTimestamp(sensorData.getRealTimestamp()); // 设置lastSensorTimestamp
             
             alarmRepository.save(alarm);
             

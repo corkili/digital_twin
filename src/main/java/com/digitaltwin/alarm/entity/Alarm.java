@@ -43,6 +43,12 @@ public class Alarm {
     @Enumerated(EnumType.STRING)
     private AlarmState state = AlarmState.UNCONFIRMED;
     
+    @Column(name = "end_timestamp")
+    private Long endTimestamp;
+    
+    @Column(name = "last_sensor_timestamp")
+    private Long lastSensorTimestamp;
+    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

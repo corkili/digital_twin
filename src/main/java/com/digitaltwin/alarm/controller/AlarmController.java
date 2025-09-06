@@ -141,14 +141,19 @@ public class AlarmController {
     /**
      * 根据时间范围获取告警总次数
      * 
-     * @param timeRange 时间范围（今日、本周、本月、全年）
+     * @param timeRange 时间范围（今日、本周、本月、全年），若未传该参数或该参数的值为空字符串，则查询所有的告警总数
      * @return 告警总次数
      */
     @GetMapping("/count")
     public WebSocketResponse<AlarmCountResponse> getAlarmCountByTimeRange(
-            @RequestParam String timeRange) {
+            @RequestParam(required = false) String timeRange) {
         try {
-            Long count = alarmQueryService.getAlarmCountByTimeRange(timeRange);
+            Long count;
+            if (timeRange == null || timeRange.isEmpty()) {
+                count = alarmQueryService.getAllAlarmCount();
+            } else {
+                count = alarmQueryService.getAlarmCountByTimeRange(timeRange);
+            }
             return WebSocketResponse.success(new AlarmCountResponse(count));
         } catch (Exception e) {
             log.error("根据时间范围获取告警总次数失败: {}", e.getMessage(), e);

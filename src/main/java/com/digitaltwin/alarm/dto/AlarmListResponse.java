@@ -33,7 +33,9 @@ public class AlarmListResponse {
         private String pointName;
         private String alarmThreshold;
         private Long alarmTimestamp;
+        private Long AlarmEndTimestamp;
         private String alarmTime;
+        private String alaramEndTime;
         private String alarmValue;
 
         public AlarmListItem() {}
@@ -46,12 +48,19 @@ public class AlarmListResponse {
             this.pointId = alarm.getPointId();
             this.alarmThreshold = alarm.getAlarmThreshold();
             this.alarmTimestamp = alarm.getTimestamp();
+            this.AlarmEndTimestamp = alarm.getEndTimestamp();
             this.alarmValue = alarm.getPointValue();
             
             // 格式化时间
             if (alarm.getTimestamp() != null) {
                 LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(alarm.getTimestamp()), ZoneId.systemDefault());
                 this.alarmTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            }
+            if (alarm.getEndTimestamp() != null) {
+                LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(alarm.getEndTimestamp()), ZoneId.systemDefault());
+                this.alaramEndTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } else {
+                this.alaramEndTime = "持续告警中";
             }
         }
     }
