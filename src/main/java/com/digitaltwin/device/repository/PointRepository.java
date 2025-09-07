@@ -24,6 +24,15 @@ public interface PointRepository extends JpaRepository<Point, Long> {
         @Param("deviceName") String deviceName,
         Pageable pageable
     );
+    
+    @Query("SELECT p FROM Point p WHERE " +
+           "(:pointName IS NULL OR p.identity LIKE %:pointName%) " +
+           "AND (:deviceName IS NULL OR p.device.name LIKE %:deviceName%)")
+    Page<Point> findAllPointsByFilters(
+        @Param("pointName") String pointName,
+        @Param("deviceName") String deviceName,
+        Pageable pageable
+    );
 
     @Query("SELECT p FROM Point p WHERE p.identity = :identity AND p.device.id = :deviceId")
     Optional<Point> findByIdentityAndDeviceId(@Param("identity") String identity, @Param("deviceId") Long deviceId);

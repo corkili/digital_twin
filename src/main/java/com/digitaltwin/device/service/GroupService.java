@@ -169,18 +169,26 @@ public class GroupService {
     /**
      * 分页查询分组内的点位列表，支持通过点位名称和设备名称搜索
      *
-     * @param groupId 分组ID
+     * @param groupId 分组ID，当为-1时查询所有点位
      * @param pointName 点位名称（可选）
      * @param deviceName 设备名称（可选）
      * @param pageable 分页参数
      * @return 点位分页列表
      */
     public Page<PointDto> getPointsByGroupWithFilters(Long groupId, String pointName, String deviceName, Pageable pageable) {
-        // 检查分组是否存在
-        groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("分组不存在，ID: " + groupId));
+        Page<Point> points;
         
-        Page<Point> points = pointRepository.findPointsByGroupAndFilters(groupId, pointName, deviceName, pageable);
+        // 当groupId为-1时，查询所有点位
+        if (groupId == -1) {
+            points = pointRepository.findAllPointsByFilters(pointName, deviceName, pageable);
+        } else {
+            // 检查分组是否存在
+            groupRepository.findById(groupId)
+                    .orElseThrow(() -> new RuntimeException("分组不存在，ID: " + groupId));
+            
+            points = pointRepository.findPointsByGroupAndFilters(groupId, pointName, deviceName, pageable);
+        }
+        
         return points.map(this::convertToDto);
     }
     
