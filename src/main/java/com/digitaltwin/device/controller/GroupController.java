@@ -249,6 +249,7 @@ public class GroupController {
         dto.setLowerLimit(point.getLowerLimit());
         dto.setLowerLowLimit(point.getLowerLowLimit());
         dto.setPublishMethod(point.getPublishMethod());
+        dto.setIsDefaultDisplay(point.getIsDefaultDisplay());
         if (point.getDevice() != null) {
             dto.setDeviceId(point.getDevice().getId());
         }

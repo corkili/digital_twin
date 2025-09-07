@@ -229,6 +229,9 @@ public class PointService {
         if (request.getHz() != null) {
             point.setHz(request.getHz());
         }
+        if (request.getIsDefaultDisplay() != null) {
+            point.setIsDefaultDisplay(request.getIsDefaultDisplay());
+        }
 
         // 从SecurityContext获取当前用户作为修改人
         User currentUser = SecurityContext.getCurrentUser();
@@ -408,6 +411,7 @@ public class PointService {
         dto.setLowerLowLimit(point.getLowerLowLimit());
         dto.setPublishMethod(point.getPublishMethod());
         dto.setHz(point.getHz());
+        dto.setIsDefaultDisplay(point.getIsDefaultDisplay());
         if (point.getDevice() != null) {
             dto.setDeviceId(point.getDevice().getId());
             dto.setDeviceName(point.getDevice().getName());

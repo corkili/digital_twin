@@ -32,6 +32,10 @@ public class Point {
     @Enumerated(EnumType.STRING)
     private PointPublishMethod publishMethod;
     
+    // 是否为默认显示项，默认为false
+    @Column(name = "is_default_display", nullable = false)
+    private Boolean isDefaultDisplay = false;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_id", nullable = false)
     private Device device;

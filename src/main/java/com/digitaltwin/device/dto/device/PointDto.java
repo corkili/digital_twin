@@ -26,6 +26,9 @@ public class PointDto {
     private String groupName;
     private Double hz; // 采集频率
     
+    // 是否为默认显示项
+    private Boolean isDefaultDisplay = false;
+    
     // 审计字段
     private Long createdBy;
     private String createdByName;
@@ -52,6 +55,7 @@ public class PointDto {
         this.lowerLowLimit = point.getLowerLowLimit();
         this.publishMethod = point.getPublishMethod();
         this.hz = point.getHz();
+        this.isDefaultDisplay = point.getIsDefaultDisplay();
         if (point.getDevice() != null) {
             this.deviceId = point.getDevice().getId();
             this.deviceName = point.getDevice().getName();

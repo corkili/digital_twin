@@ -17,4 +17,5 @@ public class UpdatePointRequest {
     private PointPublishMethod publishMethod;
     private Long deviceId;
     private Double hz; // 采集频率
+    private Boolean isDefaultDisplay;
 }
