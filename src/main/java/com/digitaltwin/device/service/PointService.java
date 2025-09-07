@@ -2,10 +2,10 @@ package com.digitaltwin.device.service;
 
 import com.digitaltwin.device.dto.OpcUaConfigData;
 import com.digitaltwin.device.dto.device.CreatePointRequest;
+import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
 import com.digitaltwin.device.dto.device.AlarmSettingRequest;
-import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.entity.Channel;
 import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.entity.Point;
@@ -90,16 +90,14 @@ public class PointService {
         }
 
         List<OpcUaConfigData.Timeseries> timeseriesList = new ArrayList<>();
-        for (Device device1 : device.getChannel().getDevices()) {
-            for (Point channelPoint : device1.getPoints()) {
-                OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
-                timeseriesTemp.setKey(channelPoint.getIdentity());
-                timeseriesTemp.setType("path");
-                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
-                timeseriesList.add(timeseriesTemp);
-            }
-        }
 
+        for (Point channelPoint : device.getPoints()) {
+            OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
+            timeseriesTemp.setKey(channelPoint.getIdentity());
+            timeseriesTemp.setType("path");
+            timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+            timeseriesList.add(timeseriesTemp);
+        }
         timeseriesList.add(timeseries);
         configData.getConfigurationJson().getMapping().get(0).setTimeseries(timeseriesList);
 
@@ -111,6 +109,14 @@ public class PointService {
         String result = opcUaConfigService.sendOpcUaConfig(configData);
         totalConnectorNames.add(device.getChannel().getName());
         opcUaConfigService.activeConnectors(totalConnectorNames);
+
+//        String opcUaConfigString = null;
+//        try {
+//            opcUaConfigString = ObjectMapper.writeValueAsString(configData);
+//        } catch (JsonProcessingException e) {
+//            log.error("ThingsBoard配置保存失败： ", e);
+//        }
+//        channel.setOpcUaConfig(opcUaConfigString);
 
         deviceRepository.save(device);
         Point savedPoint = pointRepository.save(point);

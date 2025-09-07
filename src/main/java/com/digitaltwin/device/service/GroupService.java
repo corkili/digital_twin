@@ -71,6 +71,16 @@ public class GroupService {
     }
 
     /**
+     * 根据名称模糊查询分组
+     *
+     * @param name 分组名称（模糊匹配）
+     * @return 分组列表
+     */
+    public List<Group> getGroupsByNameContaining(String name) {
+        return groupRepository.findByNameContaining(name);
+    }
+
+    /**
      * 获取所有分组
      *
      * @return 分组列表
@@ -86,6 +96,37 @@ public class GroupService {
      */
     public void deleteGroup(Long id) {
         groupRepository.deleteById(id);
+    }
+
+    /**
+     * 更新分组信息
+     *
+     * @param id 分组ID
+     * @param newName 新分组名称
+     * @param newDescription 新分组描述
+     * @return 更新后的分组
+     */
+    public Group updateGroup(Long id, String newName, String newDescription) {
+        // 检查分组是否存在
+        Group group = groupRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("分组不存在，ID: " + id));
+        
+        // 检查新名称是否已存在
+        if (!group.getName().equals(newName) && groupRepository.existsByName(newName)) {
+            throw new RuntimeException("分组名称已存在: " + newName);
+        }
+        
+        // 更新分组信息
+        group.setName(newName);
+        group.setDescription(newDescription);
+        
+        // 设置审计修改人
+        User currentUser = SecurityContext.getCurrentUser();
+        if (currentUser != null) {
+            group.setUpdatedBy(currentUser.getId());
+        }
+        
+        return groupRepository.save(group);
     }
 
     /**

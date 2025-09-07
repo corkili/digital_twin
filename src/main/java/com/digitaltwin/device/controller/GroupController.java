@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,26 @@ public class GroupController {
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("创建分组失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 更新分组信息
+     *
+     * @param id 分组ID
+     * @param request 包含新名称和描述的请求
+     * @return 更新后的分组信息
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse> updateGroup(@PathVariable Long id, 
+                                                  @RequestBody CreateGroupRequest request) {
+        try {
+            Group group = groupService.updateGroup(id, request.getName(), request.getDescription());
+            GroupDto groupDto = convertToDto(group);
+            return ResponseEntity.ok(ApiResponse.success("分组信息更新成功", groupDto));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("更新分组信息失败: " + e.getMessage()));
         }
     }
     
@@ -79,20 +100,18 @@ public class GroupController {
     }
     
     /**
-     * 根据名称获取分组
+     * 根据名称模糊查询分组
      *
-     * @param name 分组名称
-     * @return 分组信息
+     * @param name 分组名称（模糊匹配）
+     * @return 分组列表
      */
     @GetMapping(params = "name")
-    public ResponseEntity<ApiResponse> getGroupByName(@RequestParam String name) {
-        return groupService.getGroupByName(name)
-                .map(group -> {
-                    GroupDto groupDto = convertToDto(group);
-                    return ResponseEntity.ok(ApiResponse.success("查询成功", groupDto));
-                })
-                .orElse(ResponseEntity.badRequest()
-                        .body(ApiResponse.error("分组不存在，名称: " + name)));
+    public ResponseEntity<ApiResponse> getGroupsByNameContaining(@RequestParam String name) {
+        List<Group> groups = groupService.getGroupsByNameContaining(name);
+        List<GroupDto> groupDtos = groups.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.success("查询成功", groupDtos));
     }
     
     /**
