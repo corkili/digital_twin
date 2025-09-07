@@ -91,12 +91,14 @@ public class PointService {
 
         List<OpcUaConfigData.Timeseries> timeseriesList = new ArrayList<>();
 
-        for (Point channelPoint : device.getPoints()) {
-            OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
-            timeseriesTemp.setKey(channelPoint.getIdentity());
-            timeseriesTemp.setType("path");
-            timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
-            timeseriesList.add(timeseriesTemp);
+        for (Device device1 : device.getChannel().getDevices()) {
+            for (Point channelPoint : device1.getPoints()) {
+                OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
+                timeseriesTemp.setKey(channelPoint.getIdentity());
+                timeseriesTemp.setType("path");
+                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+                timeseriesList.add(timeseriesTemp);
+            }
         }
         timeseriesList.add(timeseries);
         configData.getConfigurationJson().getMapping().get(0).setTimeseries(timeseriesList);
