@@ -57,9 +57,9 @@ spring:
     
 # TDengine配置
 tdengine:
-  url: jdbc:TAOS-RS://localhost:6041/digital_twin
-  username: root
-  password: taosdata
+  url: jdbc:TAOS-RS://umi.xyz:6041/digital_twin
+  username: thingsboard
+  password: Aa20250815!
   
 opcua:
   config:
