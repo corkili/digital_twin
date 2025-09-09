@@ -24,6 +24,15 @@ public class User {
     @Column(name = "full_name", length = 100)
     private String fullName;
 
+    @Column(name = "dept_id", length = 50)
+    private String deptId;
+
+    @Column(name = "dept_name", length = 100)
+    private String deptName;
+
+    @Column(name = "uap_user_id", length = 50)
+    private String uapUserId;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

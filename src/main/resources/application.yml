@@ -102,6 +102,11 @@ springdoc:
     tags-sorter: alpha
   show-actuator: true
 
+# 外部认证配置
+external:
+  auth:
+    url: http://your-auth-server.com/api/authenticate
+    
 # 自定义配置
 websocket:
   # 主题配置
