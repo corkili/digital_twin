@@ -4,6 +4,7 @@ import com.digitaltwin.system.config.SystemConfig;
 import com.digitaltwin.system.dto.UserDto;
 import com.digitaltwin.system.dto.CreateUserRequest;
 import com.digitaltwin.system.dto.UpdateUserRequest;
+import com.digitaltwin.system.dto.ExternalUserInfo;
 import com.digitaltwin.system.entity.User;
 import com.digitaltwin.system.repository.UserRepository;
 import org.springframework.beans.BeanUtils;
@@ -83,6 +84,46 @@ public class UserService {
     
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
+
+    /**
+     * 根据外部用户信息创建或更新本地用户
+     * @param username 用户名
+     * @param externalUserInfo 外部用户信息
+     * @return 用户实体
+     */
+    public User createOrUpdateUserFromExternal(String username, ExternalUserInfo externalUserInfo) {
+        // 先通过UAP用户ID查找用户
+        Optional<User> existingUser = userRepository.findByUapUserId(externalUserInfo.getStaId());
+        
+        User user;
+        if (existingUser.isPresent()) {
+            // 更新现有用户
+            user = existingUser.get();
+        } else {
+            // 检查是否有同用户名的用户
+            Optional<User> userByUsername = userRepository.findByUsername(username);
+            if (userByUsername.isPresent()) {
+                user = userByUsername.get();
+            } else {
+                // 创建新用户
+                user = new User();
+                user.setUsername(username);
+            }
+        }
+        
+        // 更新用户信息
+        user.setFullName(externalUserInfo.getStaTruename());
+        user.setDeptId(externalUserInfo.getDeptId());
+        user.setDeptName(externalUserInfo.getDeptName());
+        user.setUapUserId(externalUserInfo.getStaId());
+        
+        // 外部认证的用户不需要密码，设置一个随机值
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            user.setPassword("EXTERNAL_AUTH");
+        }
+        
+        return userRepository.save(user);
     }
 
     private UserDto convertToDto(User user) {
