@@ -165,16 +165,16 @@ public class AlarmController {
      * 根据时间范围获取告警列表
      * 
      * @param timeRange 时间范围（今日、本周、本月、全年）
-     * @param pageNum 页码（从1开始）
-     * @param pageCount 每页数量
+     * @param page 页码（从0开始）
+     * @param size 每页数量
      * @param deviceId 设备ID（可选）
      * @return 告警列表
      */
     @GetMapping("/list")
     public WebSocketResponse<AlarmListResponse> getAlarmsByTimeRange(
             @RequestParam(required = false) String timeRange,
-            @RequestParam int pageNum,
-            @RequestParam int pageCount,
+            @RequestParam int page,
+            @RequestParam int size,
             @RequestParam(required = false) Long deviceId) {
         try {
             // 获取总次数和告警列表
@@ -183,16 +183,16 @@ public class AlarmController {
             
             if (deviceId != null) {
                 // 根据设备ID查询
-                alarms = alarmQueryService.getAlarmsByDeviceIdWithPagination(deviceId, pageNum, pageCount);
+                alarms = alarmQueryService.getAlarmsByDeviceIdWithPagination(deviceId, page + 1, size);
                 totalCount = alarmQueryService.getAlarmCountByDeviceId(deviceId);
             } else if (timeRange != null && !timeRange.isEmpty()) {
                 // 根据时间范围查询
                 totalCount = alarmQueryService.getAlarmCountByTimeRange(timeRange);
-                alarms = alarmQueryService.getAlarmsByTimeRange(timeRange, pageNum, pageCount);
+                alarms = alarmQueryService.getAlarmsByTimeRange(timeRange, page + 1, size);
             } else {
                 // 查询所有告警
                 totalCount = alarmQueryService.getAllAlarmCount();
-                alarms = alarmQueryService.getAllAlarmsWithPagination(pageNum, pageCount);
+                alarms = alarmQueryService.getAllAlarmsWithPagination(page + 1, size);
             }
             
             // 收集所有设备ID
