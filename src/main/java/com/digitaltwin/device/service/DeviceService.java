@@ -1,5 +1,7 @@
 package com.digitaltwin.device.service;
 
+import com.digitaltwin.alarm.entity.AlarmState;
+import com.digitaltwin.alarm.repository.AlarmRepository;
 import com.digitaltwin.device.dto.device.DeviceDto;
 import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.entity.Channel;
@@ -23,6 +25,7 @@ public class DeviceService {
     
     private final DeviceRepository deviceRepository;
     private final ChannelRepository channelRepository;
+    private final AlarmRepository alarmRepository;
     private final DeviceOperationLogService deviceOperationLogService;
     
     /**
@@ -61,7 +64,7 @@ public class DeviceService {
         );
         
         log.info("创建Device成功，ID: {}", savedDevice.getId());
-        return new DeviceDto(savedDevice);
+        return convertToDeviceDtoWithStatus(savedDevice);
     }
     
     /**
@@ -70,7 +73,7 @@ public class DeviceService {
      * @return Device实体
      */
     public Optional<DeviceDto> getDeviceById(Long id) {
-        return deviceRepository.findById(id).map(DeviceDto::new);
+        return deviceRepository.findById(id).map(this::convertToDeviceDtoWithStatus);
     }
     
     /**
@@ -79,7 +82,7 @@ public class DeviceService {
      * @return Device实体
      */
     public Optional<DeviceDto> getDeviceByName(String name) {
-        return deviceRepository.findByName(name).map(DeviceDto::new);
+        return deviceRepository.findByName(name).map(this::convertToDeviceDtoWithStatus);
     }
     
     /**
@@ -88,7 +91,7 @@ public class DeviceService {
      */
     public List<DeviceDto> getAllDevices() {
         return deviceRepository.findAll().stream()
-                .map(DeviceDto::new)
+                .map(this::convertToDeviceDtoWithStatus)
                 .collect(Collectors.toList());
     }
     
@@ -149,7 +152,7 @@ public class DeviceService {
         );
         
         log.info("更新Device成功，ID: {}", id);
-        return new DeviceDto(updatedDevice);
+        return convertToDeviceDtoWithStatus(updatedDevice);
     }
     
     /**
@@ -180,7 +183,7 @@ public class DeviceService {
      */
     public List<DeviceDto> getDevicesByChannelId(Long channelId) {
         return deviceRepository.findByChannelId(channelId).stream()
-                .map(DeviceDto::new)
+                .map(this::convertToDeviceDtoWithStatus)
                 .collect(Collectors.toList());
     }
     
@@ -191,5 +194,26 @@ public class DeviceService {
      */
     public long getDeviceCount() {
         return deviceRepository.count();
+    }
+    
+    /**
+     * 将Device实体转换为DeviceDto，并计算设备状态
+     * @param device Device实体
+     * @return DeviceDto对象
+     */
+    private DeviceDto convertToDeviceDtoWithStatus(Device device) {
+        DeviceDto deviceDto = new DeviceDto(device);
+        
+        // 检查设备是否有未处理的告警（状态为未确认或已确认）
+        boolean hasUnhandledAlarms = !alarmRepository.findByStateAndDeviceIdOrderByTimestampDesc(AlarmState.UNCONFIRMED, device.getId()).isEmpty()
+                || !alarmRepository.findByStateAndDeviceIdOrderByTimestampDesc(AlarmState.CONFIRMED, device.getId()).isEmpty();
+        
+        if (hasUnhandledAlarms) {
+            deviceDto.setStatus("ALARM");
+        } else {
+            deviceDto.setStatus("NORMAL");
+        }
+        
+        return deviceDto;
     }
 }
