@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 
 /**
  * 目录项DTO
- * 包含目录名称和对应的UE ID
+ * 包含目录名称、对应的UE ID和文件路径
  */
 @Data
 @NoArgsConstructor
@@ -20,4 +20,7 @@ public class CatalogItem {
     
     @Schema(description = "UE引擎ID", example = "ue_sensor_001", required = true)
     private String ue;
+    
+    @Schema(description = "文件路径", example = "/docs/sensor-config.pdf", required = true)
+    private String filePath;
 }
