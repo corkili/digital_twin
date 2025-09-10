@@ -1,6 +1,6 @@
 package com.digitaltwin.alarm.dto;
 
-import com.digitaltwin.alarm.entity.AlarmOperateLog;
+import com.digitaltwin.alarm.dto.AlarmOperateLogDTO;
 import lombok.Data;
 
 import java.util.List;
@@ -30,5 +30,5 @@ public class AlarmDetailResponse {
     private String deviceName;
     
     // 操作日志列表
-    private List<AlarmOperateLog> operateLogs;
+    private List<AlarmOperateLogDTO> operateLogs;
 }

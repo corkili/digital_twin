@@ -1,6 +1,7 @@
 package com.digitaltwin.alarm.service;
 
 import com.digitaltwin.alarm.dto.AlarmDetailResponse;
+import com.digitaltwin.alarm.dto.AlarmOperateLogDTO;
 import com.digitaltwin.alarm.entity.Alarm;
 import com.digitaltwin.alarm.entity.AlarmOperateLog;
 import com.digitaltwin.alarm.repository.AlarmOperateLogRepository;
@@ -75,11 +76,23 @@ public class AlarmDetailService {
             
             // 查询操作日志列表
             if (needOperateLog) {
+                List<AlarmOperateLog> operateLogs = null;
                 if (operateLogLimit != null && operateLogLimit > 0) {
                     Pageable pageable = PageRequest.of(0, operateLogLimit);
-                    response.setOperateLogs(alarmOperateLogRepository.findByAlarmIdOrderByOperateTimeDesc(alarmId, pageable));
+                    operateLogs = alarmOperateLogRepository.findByAlarmIdOrderByOperateTimeDesc(alarmId, pageable);
                 } else {
-                    response.setOperateLogs(alarmOperateLogRepository.findByAlarmIdOrderByOperateTimeDesc(alarmId));
+                    operateLogs = alarmOperateLogRepository.findByAlarmIdOrderByOperateTimeDesc(alarmId);
+                }
+                
+                // 转换为DTO对象
+                if (operateLogs != null) {
+                    List<AlarmOperateLogDTO> dtoList = operateLogs.stream().map(log -> {
+                        AlarmOperateLogDTO dto = new AlarmOperateLogDTO();
+                        dto.setOperateTimestamp(log.getOperateTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli());
+                        dto.setOperateAction(log.getOperateAction());
+                        return dto;
+                    }).collect(java.util.stream.Collectors.toList());
+                    response.setOperateLogs(dtoList);
                 }
             }
             
