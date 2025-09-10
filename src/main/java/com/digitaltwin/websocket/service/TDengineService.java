@@ -163,7 +163,7 @@ public class TDengineService {
         
         // 使用子表名查询数据
         String subTableName = "sensor_data_" + pointKey.replaceAll("[^a-zA-Z0-9_]", "_");
-        String querySQL = "SELECT ts, point_value FROM " + subTableName + " WHERE ts >= ? AND ts <= ? AND deviceName = ?";
+        String querySQL = "SELECT ts, point_value FROM " + subTableName + " WHERE ts >= ? AND ts <= ? AND deviceName = ? ORDER BY ts ASC";
         
         try (PreparedStatement stmt = connection.prepareStatement(querySQL)) {
             stmt.setTimestamp(1, new java.sql.Timestamp(startTime));
