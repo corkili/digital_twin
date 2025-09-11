@@ -17,6 +17,7 @@ public class DeviceDto {
     private ChannelDto channel;
     private List<PointDto> points;
     private String status;
+    private LocalDateTime alarmTime;
     
     // 审计字段
     private Long createdBy;

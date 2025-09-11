@@ -1,5 +1,6 @@
 package com.digitaltwin.device.service;
 
+import com.digitaltwin.alarm.entity.Alarm;
 import com.digitaltwin.alarm.entity.AlarmState;
 import com.digitaltwin.alarm.repository.AlarmRepository;
 import com.digitaltwin.device.dto.device.DeviceDto;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import com.digitaltwin.system.util.SecurityContext;
 import com.digitaltwin.system.entity.User;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -207,9 +210,18 @@ public class DeviceService {
         // 检查设备是否有未处理的告警（状态为未确认或已确认）
         boolean hasUnhandledAlarms = !alarmRepository.findByStateAndDeviceIdOrderByTimestampDesc(AlarmState.UNCONFIRMED, device.getId()).isEmpty()
                 || !alarmRepository.findByStateAndDeviceIdOrderByTimestampDesc(AlarmState.CONFIRMED, device.getId()).isEmpty();
-        
+
+        var unhandledAlarms = alarmRepository.findByStateAndDeviceIdOrderByTimestampDesc(AlarmState.UNCONFIRMED, device.getId());
         if (hasUnhandledAlarms) {
             deviceDto.setStatus("ALARM");
+            // 获取最早的告警时间作为设备告警时间
+            Long alarmTime = unhandledAlarms.stream()
+                    .mapToLong(Alarm::getTimestamp)
+                    .min()
+                    .orElse(System.currentTimeMillis());
+            deviceDto.setAlarmTime(Instant.ofEpochMilli(alarmTime)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime());
         } else {
             deviceDto.setStatus("NORMAL");
         }
