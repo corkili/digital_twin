@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,6 +35,8 @@ public class TrailController {
     private final TrialService trialService;
     private final PointService pointService;
     private final TDengineService tdengineService;
+    // 创建对象级别的线程池
+    private final ExecutorService executorService = Executors.newFixedThreadPool(100);
 
     /**
      * 获取试验列表（支持分页和过滤）
@@ -119,19 +124,55 @@ public class TrailController {
             // 3. 遍历所有的Point，并使用TDengineService的querySensorDataByTimeRangeAndPointKey方法查询点位数据
             Map<Long, Map<String, String>> dataMap = new HashMap<>();
             
-            for (Point point : points) {
-                List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
-                        trial.getStartTimestamp(), 
-                        trial.getEndTimestamp() != null ? trial.getEndTimestamp() : System.currentTimeMillis(),
-                        point.getIdentity());
+            long now = System.currentTimeMillis();
+            long startTime = trial.getStartTimestamp();
+            long endTime = trial.getEndTimestamp() != null ? trial.getEndTimestamp() : now;
+            
+            try {
+                // 在进入for循环前，完成时间区间拆分
+                List<TimeRange> timeRanges = splitTimeRange(startTime, endTime, 1000);
                 
-                for (Map<String, Object> pointData : pointDataList) {
-                    java.sql.Timestamp ts = (java.sql.Timestamp) pointData.get("ts");
-                    Long timestamp = ts.getTime();
-                    String value = (String) pointData.get("point_value");
+                // 存储所有CompletableFuture的列表
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                
+                // 遍历所有的Point
+                for (Point point : points) {
+                    // 注意for循环变量逃逸问题，创建final变量
+                    final String pointIdentity = point.getIdentity();
                     
-                    dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(point.getIdentity(), value);
+                    // 为每个点位的每个时间区间创建一个CompletableFuture
+                    for (TimeRange range : timeRanges) {
+                        final long rangeStartTime = range.getStartTime();
+                        final long rangeEndTime = range.getEndTime();
+                        
+                        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                            List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
+                                    rangeStartTime, 
+                                    rangeEndTime,
+                                    pointIdentity);
+                            
+                            // 同步处理dataMap，注意并发安全问题
+                            synchronized (dataMap) {
+                                for (Map<String, Object> pointData : pointDataList) {
+                                    java.sql.Timestamp ts = (java.sql.Timestamp) pointData.get("ts");
+                                    Long timestamp = ts.getTime();
+                                    String value = (String) pointData.get("point_value");
+                                    
+                                    dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(pointIdentity, value);
+                                }
+                            }
+                        }, executorService);
+                        
+                        futures.add(future);
+                    }
                 }
+                
+                // 等待所有任务完成
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                
+            } catch (Exception e) {
+                log.error("查询点位数据时发生错误: {}", e.getMessage(), e);
+                return WebSocketResponse.error("查询点位数据时发生错误: " + e.getMessage());
             }
             
             // 4. 整合数据：将所有数据整合到一个List<TrailHistoryData>中
@@ -147,6 +188,48 @@ public class TrailController {
         } catch (Exception e) {
             log.error("获取试验历史数据失败: {}", e.getMessage(), e);
             return WebSocketResponse.error("获取试验历史数据失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 将时间范围拆分为多个不重叠的区间，每个区间最多包含interval个时间单位
+     * 
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param interval 区间长度
+     * @return 时间区间列表
+     */
+    private List<TimeRange> splitTimeRange(long startTime, long endTime, long interval) {
+        List<TimeRange> ranges = new ArrayList<>();
+        long currentStart = startTime;
+        
+        while (currentStart <= endTime) {
+            long currentEnd = Math.min(currentStart + interval - 1, endTime);
+            ranges.add(new TimeRange(currentStart, currentEnd));
+            currentStart = currentEnd + 1;
+        }
+        
+        return ranges;
+    }
+    
+    /**
+     * 时间区间类
+     */
+    private static class TimeRange {
+        private final long startTime;
+        private final long endTime;
+        
+        public TimeRange(long startTime, long endTime) {
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
+        
+        public long getStartTime() {
+            return startTime;
+        }
+        
+        public long getEndTime() {
+            return endTime;
         }
     }
 }
