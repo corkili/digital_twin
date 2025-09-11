@@ -159,20 +159,44 @@ public class KnowledgeController {
     }
     
     /**
-     * 全文搜索知识库（仅 keyword 参数）
+     * 全文搜索知识库
      * 搜索标题和目录名称
      *
      * @param keyword 搜索关键字
-     * @return 搜索结果列表（不分页）
+     * @param page 页码，从0开始
+     * @param size 每页数量，设为0返回全部
+     * @param sortBy 排序字段
+     * @param sortDir 排序方向 asc/desc
+     * @return 搜索结果列表（支持分页）
      */
-    @Operation(summary = "全文搜索知识库", description = "仅按keyword在标题和目录中搜索")
+    @Operation(summary = "全文搜索知识库", description = "支持分页；当size=0时返回全部；当keyword为空时返回所有数据")
     @GetMapping("/search")
     public ResponseEntity<SimulationApiResponse<KnowledgeListResponse>> fullTextSearch(
-            @Parameter(description = "搜索关键字", required = true) @RequestParam String keyword) {
+            @Parameter(description = "搜索关键字", required = true) @RequestParam String keyword,
+            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页数量，设为0返回全部") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "排序字段") @RequestParam(defaultValue = "createdAt") String sortBy,
+            @Parameter(description = "排序方向 asc/desc") @RequestParam(defaultValue = "desc") String sortDir) {
         try {
-            List<KnowledgeDto> knowledgeList = knowledgeService.fullTextSearch(keyword);
-            KnowledgeListResponse response = KnowledgeListResponse.fromList(knowledgeList);
-            return ResponseEntity.ok(SimulationApiResponse.success("全文搜索成功", response));
+            if (keyword == null || keyword.trim().isEmpty()) {
+                if (size == 0) {
+                    List<KnowledgeDto> knowledgeList = knowledgeService.getAllKnowledge();
+                    KnowledgeListResponse response = KnowledgeListResponse.fromList(knowledgeList);
+                    return ResponseEntity.ok(SimulationApiResponse.success("查询成功", response));
+                }
+                Page<KnowledgeDto> pageData = knowledgeService.getKnowledgeWithPagination(page, size, sortBy, sortDir);
+                KnowledgeListResponse response = KnowledgeListResponse.fromPage(pageData);
+                return ResponseEntity.ok(SimulationApiResponse.success("查询成功", response));
+            }
+            
+            if (size == 0) {
+                List<KnowledgeDto> knowledgeList = knowledgeService.fullTextSearch(keyword);
+                KnowledgeListResponse response = KnowledgeListResponse.fromList(knowledgeList);
+                return ResponseEntity.ok(SimulationApiResponse.success("搜索成功", response));
+            }
+            Page<KnowledgeDto> pageData = knowledgeService.fullTextSearchWithPagination(keyword, page, size, sortBy, sortDir);
+            KnowledgeListResponse response = KnowledgeListResponse.fromPage(pageData);
+            return ResponseEntity.ok(SimulationApiResponse.success("搜索成功", response));
         } catch (Exception e) {
             log.error("全文搜索知识库失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

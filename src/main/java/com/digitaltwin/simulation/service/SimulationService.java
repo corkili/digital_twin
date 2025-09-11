@@ -5,8 +5,11 @@ import com.digitaltwin.simulation.dto.SimulationExperimentListDto;
 import com.digitaltwin.simulation.dto.SimulationStepNode;
 import com.digitaltwin.simulation.dto.ExperimentStepDto;
 import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
+import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.entity.SimulationExperiment;
+import com.digitaltwin.simulation.entity.UserExperimentRecord;
 import com.digitaltwin.simulation.repository.SimulationRepository;
+import com.digitaltwin.simulation.repository.UserExperimentRecordRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,7 @@ import java.util.stream.Collectors;
 public class SimulationService {
     
     private final SimulationRepository simulationRepository;
+    private final UserExperimentRecordRepository userExperimentRecordRepository;
     private final ObjectMapper objectMapper;
     
     /**
@@ -107,6 +111,39 @@ public class SimulationService {
         } catch (Exception e) {
             log.error("根据ID获取试验步骤失败: {}", e.getMessage(), e);
             throw new RuntimeException("获取试验步骤失败", e);
+        }
+    }
+    
+    /**
+     * 提交试验步骤
+     * @param request 提交请求
+     * @return 提交结果ID
+     */
+    @Transactional
+    public Long submitExperimentStep(SubmitExperimentStepRequest request) {
+        try {
+            // 验证试验是否存在
+            if (!simulationRepository.existsById(request.getTargetExperimentId())) {
+                throw new RuntimeException("试验ID不存在: " + request.getTargetExperimentId());
+            }
+            
+            // 将ExperimentStepDto序列化为JSON
+            String stepDataJson = objectMapper.writeValueAsString(request.getExperimentStep());
+            
+            // 创建新记录（不查重，全部新增）
+            UserExperimentRecord record = new UserExperimentRecord();
+            record.setUserId(request.getUserId());
+            record.setTargetExperimentId(request.getTargetExperimentId());
+            record.setStepData(stepDataJson);
+            
+            UserExperimentRecord savedRecord = userExperimentRecordRepository.save(record);
+            log.info("创建新的用户试验记录: recordId={}, userId={}, experimentId={}", 
+                savedRecord.getId(), request.getUserId(), request.getTargetExperimentId());
+            
+            return savedRecord.getId();
+        } catch (Exception e) {
+            log.error("提交试验步骤失败: {}", e.getMessage(), e);
+            throw new RuntimeException("提交试验步骤失败", e);
         }
     }
 }
