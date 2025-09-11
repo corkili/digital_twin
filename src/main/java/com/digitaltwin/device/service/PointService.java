@@ -2,10 +2,11 @@ package com.digitaltwin.device.service;
 
 import com.digitaltwin.device.dto.OpcUaConfigData;
 import com.digitaltwin.device.dto.device.CreatePointRequest;
-import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.dto.device.PointDto;
+import com.digitaltwin.device.dto.device.PointValueRequest;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
 import com.digitaltwin.device.dto.device.AlarmSettingRequest;
+import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.entity.Channel;
 import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.entity.Point;
@@ -15,14 +16,15 @@ import com.digitaltwin.device.repository.PointRepository;
 import com.digitaltwin.system.entity.User;
 import com.digitaltwin.system.service.UserService;
 import com.digitaltwin.system.util.SecurityContext;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -445,6 +447,22 @@ public class PointService {
         dto.setTotalCollectionCount(point.getTotalCollectionCount());
 
         return dto;
+    }
+
+    /**
+     * 根据点位ID设置点位值
+     *
+     * @param pointId 点位ID
+     * @param request 点位值请求
+     */
+    public void setPointValue(Long pointId, PointValueRequest request) {
+        // 查询点位信息
+        Point point = pointRepository.findById(pointId)
+                .orElseThrow(() -> new RuntimeException("Point not found with id: " + pointId));
+        
+        // TODO: 您的点位值设置逻辑在这里实现
+        // 这里只是查询出点位信息，具体设置逻辑需要您来实现
+        // 可以通过point变量获取点位的所有信息
     }
 
     /**

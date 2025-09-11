@@ -1,12 +1,12 @@
 package com.digitaltwin.device.controller;
 
 import com.digitaltwin.device.dto.ApiResponse;
-import com.digitaltwin.device.dto.device.CreatePointRequest;
-import com.digitaltwin.device.dto.device.CreatePointRequest;
-import com.digitaltwin.device.dto.device.PointDto;
-import com.digitaltwin.device.dto.device.UpdatePointRequest;
 import com.digitaltwin.device.dto.device.AlarmSettingRequest;
+import com.digitaltwin.device.dto.device.CreatePointRequest;
 import com.digitaltwin.device.dto.device.DevicePointCountDto;
+import com.digitaltwin.device.dto.device.PointDto;
+import com.digitaltwin.device.dto.device.PointValueRequest;
+import com.digitaltwin.device.dto.device.UpdatePointRequest;
 import com.digitaltwin.device.service.PointService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -166,6 +166,22 @@ public class PointManagementController {
             return ResponseEntity.ok(ApiResponse.success("Point count by device retrieved successfully", countList));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve point count by device: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 根据点位ID设置点位值
+     * @param pointId 点位ID
+     * @param request 点位值请求
+     * @return 操作结果
+     */
+    @PostMapping("/{pointId}/value")
+    public ResponseEntity<ApiResponse> setPointValue(@PathVariable Long pointId, @RequestBody PointValueRequest request) {
+        try {
+            pointService.setPointValue(pointId, request);
+            return ResponseEntity.ok(ApiResponse.success("Point value set successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to set point value: " + e.getMessage()));
         }
     }
 
