@@ -37,6 +37,8 @@ public class AlarmListResponse {
         private String alarmTime;
         private String alarmEndTime;
         private String alarmValue;
+        private String alarmDuration;
+        private Long alarmDurationSecond;
 
         public AlarmListItem() {}
 
@@ -60,7 +62,32 @@ public class AlarmListResponse {
                 LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(alarm.getEndTimestamp()), ZoneId.systemDefault());
                 this.alarmEndTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
             } else {
-                this.alarmEndTime = "持续告警中";
+                this.alarmEndTime = "未结束";
+            }
+
+            long duration = 0L;
+            // 计算告警持续时间
+            if (alarm.getEndTimestamp() != null) {
+                duration = alarm.getEndTimestamp() - alarm.getTimestamp();
+            } else {
+                duration = System.currentTimeMillis() - alarm.getTimestamp();
+            }
+            duration = duration / 1000;
+            this.alarmDurationSecond = duration;
+
+            // 格式化持续时间：
+            // 小于60秒显示秒
+            // 大于等于60秒，小于1小时显示分秒
+            // 大于等于1小时，显示小时分秒
+            // 大于等于24小时，显示天小时分秒
+            if (duration < 60) {
+                this.alarmDuration = String.format("%d秒", duration);
+            } else if (duration < 3600) {
+                this.alarmDuration = String.format("%d分%d秒", duration / 60, duration % 60);
+            } else if (duration < 86400) {
+                this.alarmDuration = String.format("%d小时%d分%d秒", duration / 3600, (duration / 60) % 60, duration % 60);
+            } else {
+                this.alarmDuration = String.format("%d天%d小时%d分%d秒", duration / 86400, (duration / 3600) % 24, (duration / 60) % 60, duration % 60);
             }
         }
     }
