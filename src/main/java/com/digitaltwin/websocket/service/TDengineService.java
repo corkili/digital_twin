@@ -1,5 +1,7 @@
 package com.digitaltwin.websocket.service;
 
+import com.digitaltwin.trial.entity.Trial;
+import com.digitaltwin.trial.service.TrialService;
 import com.digitaltwin.websocket.config.TDengineConfig;
 import com.digitaltwin.websocket.model.SensorData;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import java.util.Set;
 public class TDengineService {
 
     private final TDengineConfig tdengineConfig;
+    private final TrialService trialService;
 
     private Connection connection;
 
@@ -88,6 +91,13 @@ public class TDengineService {
             // 直接从sensorData对象获取ts字段作为时间戳
             Long timestamp = sensorData.getRealTimestamp();
             
+            // 初始化试验相关变量
+            boolean isNewTrialStarted = false;
+            boolean isTrialEnded = false;
+            String trialName = null;
+            String trialRunNo = null;
+            String trialMode = null;
+            
             // 遍历所有点位数据
             if (sensorData.getPointDataMap() != null && timestamp != null) {
                 int dataCount = 0;
@@ -95,6 +105,21 @@ public class TDengineService {
                     // 跳过不需要存储的字段
                     if (EXCLUDED_FIELDS.contains(entry.getKey())) {
                         continue;
+                    }
+                    
+                    // 检查试验开始和结束标志
+                    if ("TestStart".equals(entry.getKey())) {
+                        if (Boolean.TRUE.equals(entry.getValue())) {
+                            isNewTrialStarted = true;
+                        } else if (Boolean.FALSE.equals(entry.getValue())) {
+                            isTrialEnded = true;
+                        }
+                    } else if ("TestName".equals(entry.getKey())) {
+                        trialName = entry.getValue() != null ? entry.getValue().toString() : null;
+                    } else if ("TestRunNo".equals(entry.getKey())) {
+                        trialRunNo = entry.getValue() != null ? entry.getValue().toString() : null;
+                    } else if ("TestMode".equals(entry.getKey())) {
+                        trialMode = entry.getValue() != null ? entry.getValue().toString() : null;
                     }
                     
                     // 为每个点位创建子表
@@ -126,6 +151,33 @@ public class TDengineService {
                 
                 connection.commit();
                 log.debug("传感器数据已保存到TDengine，共处理{}条记录: {}", dataCount, sensorData);
+                
+                // 处理试验逻辑
+                if (isNewTrialStarted) {
+                    // 如果试验名称为空，则生成一个试验名称，规则为"未知试验_"+sensorData的id
+                    if (trialName == null || trialName.isEmpty()) {
+                        trialName = "未知试验_" + (sensorData.getID() != null ? sensorData.getID() : "unknown");
+                    }
+                    
+                    // 如果试验编号为空，则将试验编号填充为"未知_"+sensorData的id
+                    if (trialRunNo == null || trialRunNo.isEmpty()) {
+                        trialRunNo = "未知_" + (sensorData.getID() != null ? sensorData.getID() : "unknown");
+                    }
+                    
+                    // 创建试验
+                    trialService.createTrial(trialName, timestamp, trialRunNo, trialMode);
+                    log.info("已创建新试验: 名称={}, 编号={}, 模式={}, 开始时间={}", trialName, trialRunNo, trialMode, timestamp);
+                } else if (isTrialEnded) {
+                    // 查询最后一个未结束的试验，并将该试验的结束时间设置为当前时间
+                    trialService.getLastUnfinishedTrial().ifPresent(trial -> {
+                        try {
+                            trialService.updateTrial(trial.getId(), trial.getRunNo(), trial.getMode(), timestamp);
+                            log.info("已更新试验结束时间: ID={}, 名称={}, 结束时间={}", trial.getId(), trial.getName(), timestamp);
+                        } catch (Exception e) {
+                            log.error("更新试验结束时间失败: {}", e.getMessage(), e);
+                        }
+                    });
+                }
             }
             
         } catch (SQLException e) {
@@ -143,7 +195,7 @@ public class TDengineService {
             }
         }
     }
-    
+
     /**
      * 根据时间范围、point_key和deviceName查询点位数据
      * 
@@ -184,7 +236,7 @@ public class TDengineService {
         
         return result;
     }
-    
+
     /**
      * 查询指定时间点的所有点位数据
      * 

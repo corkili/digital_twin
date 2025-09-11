@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TrialRepository extends JpaRepository<Trial, Long> {
@@ -37,4 +38,8 @@ public interface TrialRepository extends JpaRepository<Trial, Long> {
         @Param("startTimestamp") Long startTimestamp,
         @Param("endTimestamp") Long endTimestamp,
         Pageable pageable);
+    
+    // 查询最后一个未结束的试验（按开始时间倒序排列，取第一个）
+    @Query("SELECT t FROM Trial t WHERE t.endTimestamp IS NULL ORDER BY t.startTimestamp DESC")
+    List<Trial> findLastUnfinishedTrial();
 }

@@ -88,6 +88,16 @@ public class TrialService {
     }
 
     /**
+     * 获取最后一个未结束的试验
+     *
+     * @return 最后一个未结束的试验对象，如果不存在则返回空Optional
+     */
+    public Optional<Trial> getLastUnfinishedTrial() {
+        List<Trial> trials = trialRepository.findLastUnfinishedTrial();
+        return trials.isEmpty() ? Optional.empty() : Optional.of(trials.get(0));
+    }
+
+    /**
      * 根据ID获取试验
      *
      * @param id 试验ID
