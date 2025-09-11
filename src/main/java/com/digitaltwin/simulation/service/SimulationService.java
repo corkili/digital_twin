@@ -205,7 +205,6 @@ public class SimulationService {
             }
             
             int totalNodes = standardNames.size();
-            int scorePerNode = 100 / totalNodes; // 向下取整
             int correctCount = 0;
             
             // 按顺序比对名称
@@ -216,10 +215,11 @@ public class SimulationService {
                 }
             }
             
-            int finalScore = correctCount * scorePerNode;
+            // 计算正确步骤数占总步骤数的比例 * 100
+            int finalScore = Math.round((float) correctCount / totalNodes * 100);
             
-            log.debug("打分详情 - 总节点数: {}, 每节点分值: {}, 正确数量: {}, 最终得分: {}", 
-                totalNodes, scorePerNode, correctCount, finalScore);
+            log.debug("打分详情 - 总节点数: {}, 正确数量: {}, 正确率: {}%, 最终得分: {}", 
+                totalNodes, correctCount, Math.round((float) correctCount / totalNodes * 100), finalScore);
             
             return finalScore;
             

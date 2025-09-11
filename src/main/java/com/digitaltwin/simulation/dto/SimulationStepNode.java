@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.digitaltwin.simulation.dto.deserializer.SimulationStepNodeDeserializer;
 
 import java.util.List;
 
@@ -14,6 +16,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonDeserialize(using = SimulationStepNodeDeserializer.class)
 @Schema(description = "仿真步骤节点（支持子节点、设置、复选框、输入项）")
 public class SimulationStepNode {
     
