@@ -28,6 +28,9 @@ public class ExamDto {
     @Schema(description = "试验时间", example = "2025-04-15T12:12:12")
     private LocalDateTime experimentTime;
 
+    @Schema(description = "成绩", example = "85.5")
+    private Double score;
+
     @Schema(description = "创建时间", example = "2025-04-15T12:12:12")
     private LocalDateTime createdAt;
 
@@ -39,6 +42,7 @@ public class ExamDto {
         dto.setMode(e.getMode());
         dto.setExperimentName(e.getExperimentName());
         dto.setExperimentTime(e.getExperimentTime());
+        dto.setScore(e.getScore());
         dto.setCreatedAt(e.getCreatedAt());
         return dto;
     }

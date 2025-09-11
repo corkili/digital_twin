@@ -111,7 +111,7 @@ public class ExamController {
         }
     }
 
-    @Operation(summary = "按姓名模糊搜索", description = "支持分页；当size=0时返回全部")
+    @Operation(summary = "按姓名模糊搜索", description = "支持分页；当size=0时返回全部；当name为空时返回所有数据")
     @GetMapping("/search")
     public ResponseEntity<SimulationApiResponse<ExamListResponse>> searchByName(
             @Parameter(description = "姓名关键字", required = true) @RequestParam String name,
@@ -121,6 +121,15 @@ public class ExamController {
             @Parameter(description = "排序方向 asc/desc") @RequestParam(defaultValue = "desc") String sortDir
     ) {
         try {
+            if (name == null || name.trim().isEmpty()) {
+                if (size == 0) {
+                    List<ExamDto> list = examService.getAll();
+                    return ResponseEntity.ok(SimulationApiResponse.success("查询成功", ExamListResponse.fromList(list)));
+                }
+                Page<ExamDto> pageData = examService.getPage(page, size, sortBy, sortDir);
+                return ResponseEntity.ok(SimulationApiResponse.success("查询成功", ExamListResponse.fromPage(pageData)));
+            }
+            
             if (size == 0) {
                 List<ExamDto> list = examService.searchByName(name);
                 return ResponseEntity.ok(SimulationApiResponse.success("搜索成功", ExamListResponse.fromList(list)));
