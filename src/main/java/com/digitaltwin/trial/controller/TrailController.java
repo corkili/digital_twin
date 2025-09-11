@@ -1,18 +1,24 @@
 package com.digitaltwin.trial.controller;
 
+import com.digitaltwin.device.entity.Point;
+import com.digitaltwin.device.service.PointService;
+import com.digitaltwin.trial.dto.TrailHistoryData;
 import com.digitaltwin.trial.dto.TrailListResponse;
-import com.digitaltwin.trial.dto.TrialDto;
 import com.digitaltwin.trial.entity.Trial;
 import com.digitaltwin.trial.service.TrialService;
 import com.digitaltwin.websocket.model.WebSocketResponse;
+import com.digitaltwin.websocket.service.TDengineService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -23,6 +29,8 @@ import java.util.stream.Collectors;
 public class TrailController {
 
     private final TrialService trialService;
+    private final PointService pointService;
+    private final TDengineService tdengineService;
 
     /**
      * 获取试验列表（支持分页和过滤）
@@ -48,7 +56,7 @@ public class TrailController {
             @Parameter(description = "排序方向") @RequestParam(defaultValue = "DESC") String sortDir) {
         try {
             // 调用服务层方法获取分页数据
-            Page<Trial> trialPage = trialService.getTrialsWithFilters(name, runNo, date, page, size, sortBy, sortDir);
+            org.springframework.data.domain.Page<Trial> trialPage = trialService.getTrialsWithFilters(name, runNo, date, page, size, sortBy, sortDir);
             
             // 转换为TrailListResponse
             TrailListResponse response = new TrailListResponse(
@@ -62,6 +70,65 @@ public class TrailController {
         } catch (Exception e) {
             log.error("获取试验列表失败: {}", e.getMessage(), e);
             return WebSocketResponse.error("获取试验列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 根据试验ID查询所有点位数据
+     *
+     * @param id 试验ID
+     * @return 试验的所有点位数据
+     */
+    @Operation(summary = "根据试验ID查询所有点位数据")
+    @GetMapping("/{id}/history_data")
+    public WebSocketResponse<List<TrailHistoryData>> getTrailHistoryDataById(
+            @Parameter(description = "试验ID") @PathVariable Long id) {
+        try {
+            // 1. 从数据库中查询出对应的Trial
+            Trial trial = trialService.getTrialById(id)
+                    .orElseThrow(() -> new RuntimeException("Trial not found with id: " + id));
+            
+            // 2. 从数据库中查询出所有的Point
+            List<Point> points = pointService.getAllPoints().stream()
+                    .map(dto -> {
+                        Point point = new Point();
+                        point.setId(dto.getId());
+                        point.setIdentity(dto.getIdentity());
+                        return point;
+                    })
+                    .collect(Collectors.toList());
+            
+            // 3. 遍历所有的Point，并使用TDengineService的querySensorDataByTimeRangeAndPointKey方法查询点位数据
+            Map<Long, Map<String, String>> dataMap = new HashMap<>();
+            
+            for (Point point : points) {
+                List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
+                        trial.getStartTimestamp(), 
+                        trial.getEndTimestamp() != null ? trial.getEndTimestamp() : System.currentTimeMillis(),
+                        point.getIdentity());
+                
+                for (Map<String, Object> pointData : pointDataList) {
+                    java.sql.Timestamp ts = (java.sql.Timestamp) pointData.get("ts");
+                    Long timestamp = ts.getTime();
+                    String value = (String) pointData.get("point_value");
+                    
+                    dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(point.getIdentity(), value);
+                }
+            }
+            
+            // 4. 整合数据：将所有数据整合到一个List<TrailHistoryData>中
+            List<TrailHistoryData> result = new ArrayList<>();
+            for (Map.Entry<Long, Map<String, String>> entry : dataMap.entrySet()) {
+                result.add(new TrailHistoryData(entry.getKey(), entry.getValue()));
+            }
+            
+            // 5. 按时间戳升序排列
+            result.sort((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()));
+            
+            return WebSocketResponse.success(result);
+        } catch (Exception e) {
+            log.error("获取试验历史数据失败: {}", e.getMessage(), e);
+            return WebSocketResponse.error("获取试验历史数据失败: " + e.getMessage());
         }
     }
 }

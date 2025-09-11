@@ -238,6 +238,45 @@ public class TDengineService {
     }
 
     /**
+     * 根据时间范围、point_key查询点位数据
+     * 
+     * @param startTime 开始时间戳
+     * @param endTime 结束时间戳
+     * @param pointKey 点位标识
+     * @return 查询结果
+     */
+    public List<Map<String, Object>> querySensorDataByTimeRangeAndPointKey(long startTime, long endTime, String pointKey) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        if (connection == null) {
+            log.error("TDengine连接未初始化");
+            return result;
+        }
+        
+        // 使用子表名查询数据
+        String subTableName = "sensor_data_" + pointKey.replaceAll("[^a-zA-Z0-9_]", "_");
+        String querySQL = "SELECT ts, point_value FROM " + subTableName + " WHERE ts >= ? AND ts <= ? ORDER BY ts ASC";
+        
+        try (PreparedStatement stmt = connection.prepareStatement(querySQL)) {
+            stmt.setTimestamp(1, new java.sql.Timestamp(startTime));
+            stmt.setTimestamp(2, new java.sql.Timestamp(endTime));
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new HashMap<>();
+                    row.put("ts", rs.getTimestamp("ts"));
+                    row.put("point_value", rs.getString("point_value"));
+                    result.add(row);
+                }
+            }
+        } catch (SQLException e) {
+            log.error("查询传感器数据时出错: {}", e.getMessage(), e);
+        }
+        
+        return result;
+    }
+
+    /**
      * 查询指定时间点的所有点位数据
      * 
      * @param timestamp 时间戳
