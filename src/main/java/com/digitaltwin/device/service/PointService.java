@@ -417,6 +417,7 @@ public class PointService {
         if (point.getDevice() != null) {
             dto.setDeviceId(point.getDevice().getId());
             dto.setDeviceName(point.getDevice().getName());
+            dto.setChannelName(point.getDevice().getChannel().getName());
         }
 
         // 设置审计字段

@@ -26,6 +26,10 @@ public class PointDto {
     private String groupName;
     private Double hz; // 采集频率
     
+    // 添加通道相关信息
+    private Long channelId;
+    private String channelName;
+    
     // 是否为默认显示项
     private Boolean isDefaultDisplay = false;
     
@@ -65,6 +69,12 @@ public class PointDto {
         if (point.getGroup() != null) {
             this.groupId = point.getGroup().getId();
             this.groupName = point.getGroup().getName();
+        }
+        
+        // 设置通道信息
+        if (point.getDevice() != null && point.getDevice().getChannel() != null) {
+            this.channelId = point.getDevice().getChannel().getId();
+            this.channelName = point.getDevice().getChannel().getName();
         }
         
         // 设置审计字段
