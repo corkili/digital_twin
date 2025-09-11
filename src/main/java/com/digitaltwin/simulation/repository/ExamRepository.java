@@ -10,6 +10,6 @@ import java.util.List;
 
 @Repository
 public interface ExamRepository extends JpaRepository<ExamRecord, Long> {
-    List<ExamRecord> findByNameContainingIgnoreCase(String name);
-    Page<ExamRecord> findByNameContainingIgnoreCase(String name, Pageable pageable);
+    List<ExamRecord> findByAuapUserIdIn(List<String> auapUserIds);
+    Page<ExamRecord> findByAuapUserIdIn(List<String> auapUserIds, Pageable pageable);
 }

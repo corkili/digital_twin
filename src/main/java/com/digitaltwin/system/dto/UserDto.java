@@ -11,7 +11,7 @@ public class UserDto {
     private String fullName;
     private String deptId;
     private String deptName;
-    private String uapUserId;
+    private String auapUserId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

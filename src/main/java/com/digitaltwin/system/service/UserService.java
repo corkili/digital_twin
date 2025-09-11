@@ -94,7 +94,7 @@ public class UserService {
      */
     public User createOrUpdateUserFromExternal(String username, ExternalUserInfo externalUserInfo) {
         // 先通过UAP用户ID查找用户
-        Optional<User> existingUser = userRepository.findByUapUserId(externalUserInfo.getStaId());
+        Optional<User> existingUser = userRepository.findByAuapUserId(externalUserInfo.getStaId());
         
         User user;
         if (existingUser.isPresent()) {
@@ -116,7 +116,7 @@ public class UserService {
         user.setFullName(externalUserInfo.getStaTruename());
         user.setDeptId(externalUserInfo.getDeptId());
         user.setDeptName(externalUserInfo.getDeptName());
-        user.setUapUserId(externalUserInfo.getStaId());
+        user.setAuapUserId(externalUserInfo.getStaId());
         
         // 外部认证的用户不需要密码，设置一个随机值
         if (user.getPassword() == null || user.getPassword().isEmpty()) {

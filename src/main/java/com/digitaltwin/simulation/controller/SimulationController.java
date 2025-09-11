@@ -2,7 +2,7 @@ package com.digitaltwin.simulation.controller;
 
 import com.digitaltwin.simulation.dto.SimulationApiResponse;
 import com.digitaltwin.simulation.dto.SimulationExperimentListDto;
-import com.digitaltwin.simulation.dto.ExperimentStepDto;
+import com.digitaltwin.simulation.dto.ExperimentStepsDto;
 import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.service.SimulationService;
@@ -80,13 +80,13 @@ public class SimulationController {
      * 根据试验ID获取试验步骤
      * 
      * @param id 试验ID
-     * @return 试验步骤数据
+     * @return 试验步骤数据（包含步骤数组）
      */
     @GetMapping("/{id}/steps")
-    public ResponseEntity<SimulationApiResponse<ExperimentStepDto>> getExperimentSteps(
+    public ResponseEntity<SimulationApiResponse<ExperimentStepsDto>> getExperimentSteps(
             @Parameter(description = "试验ID") @PathVariable Long id) {
         try {
-            Optional<ExperimentStepDto> steps = simulationService.getExperimentSteps(id);
+            Optional<ExperimentStepsDto> steps = simulationService.getExperimentSteps(id);
             if (steps.isPresent()) {
                 return ResponseEntity.ok(SimulationApiResponse.success("获取试验步骤成功", steps.get()));
             } else {

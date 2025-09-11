@@ -13,9 +13,9 @@ public class ExamRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 姓名
-    @Column(nullable = false, length = 100)
-    private String name;
+    // 用户AUAP ID
+    @Column(name = "auap_user_id", nullable = false, length = 50)
+    private String auapUserId;
 
     // 模式：手动/自动
     @Column(nullable = false, length = 20)
@@ -31,7 +31,7 @@ public class ExamRecord {
 
     // 成绩
     @Column(name = "score")
-    private Double score;
+    private Integer score;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

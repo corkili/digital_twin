@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 @Data
 @Schema(description = "创建评定考核请求")
 public class CreateExamRequest {
-    @Schema(description = "姓名", required = true)
-    private String name;
+    @Schema(description = "用户AUAP ID", required = true)
+    private String auapUserId;
 
     @Schema(description = "模式(手动/自动)", example = "自动")
     private String mode;
@@ -21,6 +21,6 @@ public class CreateExamRequest {
     private LocalDateTime experimentTime;
 
     @Schema(description = "成绩")
-    private Double score;
+    private Integer score;
 }
 

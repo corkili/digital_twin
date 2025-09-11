@@ -30,8 +30,8 @@ public class User {
     @Column(name = "dept_name", length = 100)
     private String deptName;
 
-    @Column(name = "uap_user_id", length = 50)
-    private String uapUserId;
+    @Column(name = "auap_user_id", length = 50)
+    private String auapUserId;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

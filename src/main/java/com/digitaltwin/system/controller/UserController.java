@@ -113,7 +113,7 @@ public class UserController {
             userDto.setFullName(user.getFullName());
             userDto.setDeptId(user.getDeptId());
             userDto.setDeptName(user.getDeptName());
-            userDto.setUapUserId(user.getUapUserId());
+            userDto.setAuapUserId(user.getAuapUserId());
             userDto.setCreatedAt(user.getCreatedAt());
             userDto.setUpdatedAt(user.getUpdatedAt());
             
@@ -144,7 +144,7 @@ public class UserController {
             userDto.setFullName(currentUser.getFullName());
             userDto.setDeptId(currentUser.getDeptId());
             userDto.setDeptName(currentUser.getDeptName());
-            userDto.setUapUserId(currentUser.getUapUserId());
+            userDto.setAuapUserId(currentUser.getAuapUserId());
             userDto.setCreatedAt(currentUser.getCreatedAt());
             userDto.setUpdatedAt(currentUser.getUpdatedAt());
             

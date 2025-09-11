@@ -131,10 +131,10 @@ public class ExamController {
             }
             
             if (size == 0) {
-                List<ExamDto> list = examService.searchByName(name);
+                List<ExamDto> list = examService.searchByUserName(name);
                 return ResponseEntity.ok(SimulationApiResponse.success("搜索成功", ExamListResponse.fromList(list)));
             }
-            Page<ExamDto> pageData = examService.searchByNameWithPagination(name, page, size, sortBy, sortDir);
+            Page<ExamDto> pageData = examService.searchByUserNameWithPagination(name, page, size, sortBy, sortDir);
             return ResponseEntity.ok(SimulationApiResponse.success("搜索成功", ExamListResponse.fromPage(pageData)));
         } catch (Exception e) {
             log.error("按姓名搜索Exam失败: {}", e.getMessage(), e);

@@ -224,6 +224,198 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
+## 仿真试验打分机制
+
+### 打分规则
+
+仿真试验系统包含自动打分功能，当用户提交试验步骤数组时会自动计算得分：
+
+#### 打分逻辑
+
+1. **比对对象**：
+   - 标准答案：存储在 `simulation_experiment` 表的 `steps_data` 字段中的**步骤数组**
+   - 用户答案：通过 `/simulations/submit` 接口提交的试验步骤数组 `experimentSteps`
+
+2. **比对单位**：
+   - 从所有步骤中提取所有 `SimulationStepNode` 的 `name` 字段进行比对
+   - 只比对第一层节点，不包括嵌套的 `child` 节点
+
+3. **比对方式**：
+   - 按照步骤(Step) → 角色(Role) → 任务(Task)的顺序提取所有节点名称
+   - 严格按顺序进行一对一比对
+   - 名称完全匹配才算正确
+
+4. **分数计算**：
+   - 总分：100分
+   - 单节点分值：`100 ÷ 总节点数量`（向下取整）
+   - 最终得分：`正确节点数量 × 单节点分值`
+   - 结果为整数（自动抹掉小数）
+
+#### 打分示例
+
+**标准答案（步骤数组）：**
+```json
+[
+  {
+    "stepId": 1,
+    "stepName": "传感器初始化",
+    "roles": [
+      {
+        "roleId": "role1",
+        "roleName": "操作员",
+        "tasks": [
+          {"name": "打开电源开关"},
+          {"name": "检查传感器状态"}
+        ]
+      }
+    ]
+  },
+  {
+    "stepId": 2,
+    "stepName": "数据采集",
+    "roles": [
+      {
+        "roleId": "role1",
+        "roleName": "操作员",
+        "tasks": [
+          {"name": "启动采集程序"},
+          {"name": "设置采集频率"}
+        ]
+      },
+      {
+        "roleId": "role2",
+        "roleName": "监控员",
+        "tasks": [
+          {"name": "监控数据质量"}
+        ]
+      }
+    ]
+  }
+]
+```
+
+**用户答案（步骤数组）：**
+```json
+[
+  {
+    "stepId": 1,
+    "stepName": "传感器初始化",
+    "roles": [
+      {
+        "roleId": "role1",
+        "roleName": "操作员",
+        "tasks": [
+          {"name": "打开电源开关"},      // ✓ 正确
+          {"name": "检查设备状态"}       // ✗ 错误
+        ]
+      }
+    ]
+  },
+  {
+    "stepId": 2,
+    "stepName": "数据采集",
+    "roles": [
+      {
+        "roleId": "role1",
+        "roleName": "操作员",
+        "tasks": [
+          {"name": "启动采集程序"},      // ✓ 正确
+          {"name": "设置采集频率"}       // ✓ 正确
+        ]
+      },
+      {
+        "roleId": "role2",
+        "roleName": "监控员",
+        "tasks": [
+          {"name": "监控数据质量"}       // ✓ 正确
+        ]
+      }
+    ]
+  }
+]
+```
+
+**计算过程：**
+- 按顺序提取的节点名称：
+  1. "打开电源开关" ✓
+  2. "检查传感器状态" vs "检查设备状态" ✗
+  3. "启动采集程序" ✓
+  4. "设置采集频率" ✓
+  5. "监控数据质量" ✓
+- 总节点数：5个
+- 单节点分值：100 ÷ 5 = 20分
+- 正确节点：4个（第2个错误）
+- 最终得分：4 × 20 = 80分
+
+#### API接口变化
+
+**GET `/simulations/{id}/steps`** - 获取试验步骤
+- 返回：`ExperimentStepsDto`，包含步骤数组和元信息
+
+**POST `/simulations/submit`** - 提交试验步骤
+- 请求体字段：`experimentSteps`（数组类型）
+- 示例：
+```json
+{
+  "userId": 123,
+  "auapUserId": "user001",
+  "targetExperimentId": 456,
+  "experimentSteps": [
+    // 步骤数组
+  ]
+}
+```
+
+#### 数据存储
+
+- 计算出的分数存储在 `simulation_user_experiment` 表的 `score` 字段中
+- 分数范围：0-100的整数
+- 如果计算失败或找不到标准答案，默认得分为0
+
+#### 示例数据库记录
+
+项目提供了示例SQL脚本来创建测试数据：
+
+**执行脚本：**
+```bash
+# 使用简化版本（推荐）
+mysql -u username -p database_name < sample_experiment_steps_simple.sql
+
+# 或使用MySQL JSON函数版本
+mysql -u username -p database_name < sample_experiment_steps.sql
+```
+
+**示例数据包含：**
+
+1. **传感器数据采集实验** - 3个步骤，4个角色，13个任务节点
+   - 步骤1: 传感器初始化（操作员、监督员）
+   - 步骤2: 数据采集配置（操作员）
+   - 步骤3: 实时监控（监控员、分析员）
+
+2. **工业设备维护实验** - 3个步骤，4个角色，11个任务节点
+   - 步骤1: 设备停机准备（安全员）
+   - 步骤2: 维护检查（维护技术员、质检员）
+   - 步骤3: 设备重启（操作员）
+
+**验证数据：**
+```sql
+-- 查看插入的试验数据
+SELECT id, name, description, status, created_at 
+FROM simulation_experiment 
+WHERE name LIKE '%实验';
+
+-- 查看具体的步骤数据（格式化显示）
+SELECT name, JSON_PRETTY(steps_data) AS formatted_steps 
+FROM simulation_experiment 
+WHERE id = 1;
+```
+
+**数据结构说明：**
+- `steps_data` 字段存储JSON格式的步骤数组
+- 每个步骤包含：stepId, stepName, roles
+- 每个角色包含：roleId, roleName, tasks  
+- 每个任务包含：name（用于打分比对的关键字段）
+
 ## 许可证
 
 MIT License

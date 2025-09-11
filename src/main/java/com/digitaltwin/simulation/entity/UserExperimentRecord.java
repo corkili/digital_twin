@@ -30,6 +30,10 @@ public class UserExperimentRecord {
     @Column(name = "step_data", columnDefinition = "JSON")
     private String stepData;
     
+    // 用户答题得分
+    @Column(name = "score")
+    private Integer score;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     
