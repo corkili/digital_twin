@@ -2,6 +2,7 @@ package com.digitaltwin.trial.controller;
 
 import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.service.PointService;
+import com.digitaltwin.trial.dto.TrailCountResponse;
 import com.digitaltwin.trial.dto.TrailHistoryData;
 import com.digitaltwin.trial.dto.TrailListResponse;
 import com.digitaltwin.trial.entity.Trial;
@@ -70,6 +71,23 @@ public class TrailController {
         } catch (Exception e) {
             log.error("获取试验列表失败: {}", e.getMessage(), e);
             return WebSocketResponse.error("获取试验列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取试验总数
+     *
+     * @return 试验总数
+     */
+    @Operation(summary = "获取试验总数")
+    @GetMapping("/count")
+    public WebSocketResponse<TrailCountResponse> count() {
+        try {
+            long count = trialService.getCount();
+            return WebSocketResponse.success(new TrailCountResponse(count));
+        } catch (Exception e) {
+            log.error("获取试验总数失败: {}", e.getMessage(), e);
+            return WebSocketResponse.error("获取试验总数失败: " + e.getMessage());
         }
     }
     

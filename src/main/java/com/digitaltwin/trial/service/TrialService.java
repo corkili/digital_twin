@@ -148,4 +148,13 @@ public class TrialService {
         // 先使用名称和编号过滤
         return trialRepository.findByNameContainingIgnoreCaseAndRunNo(name, runNo, startTimestamp, endTimestamp, pageable);
     }
+    
+    /**
+     * 获取试验总数
+     *
+     * @return 试验总数
+     */
+    public long getCount() {
+        return trialRepository.count();
+    }
 }
