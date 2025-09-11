@@ -4,6 +4,7 @@ import com.digitaltwin.simulation.dto.SimulationApiResponse;
 import com.digitaltwin.simulation.dto.SimulationExperimentListDto;
 import com.digitaltwin.simulation.dto.ExperimentStepDto;
 import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
+import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.service.SimulationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -96,6 +97,27 @@ public class SimulationController {
             log.error("获取试验步骤失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(SimulationApiResponse.error("获取试验步骤失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 提交试验步骤
+     * 
+     * @param request 提交请求，包含用户ID、试验ID和步骤数据
+     * @return 提交结果
+     */
+    @Operation(summary = "提交试验步骤", description = "用户提交基于某个试验模板的操作步骤数据")
+    @PostMapping("/submit")
+    public ResponseEntity<SimulationApiResponse<Long>> submitExperimentStep(
+            @RequestBody SubmitExperimentStepRequest request) {
+        try {
+            Long recordId = simulationService.submitExperimentStep(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(SimulationApiResponse.success("提交试验步骤成功", recordId));
+        } catch (Exception e) {
+            log.error("提交试验步骤失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("提交试验步骤失败: " + e.getMessage()));
         }
     }
 }
