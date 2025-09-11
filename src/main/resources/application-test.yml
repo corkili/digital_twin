@@ -1,0 +1,57 @@
+spring:
+  # RabbitMQ配置 - 连接本地
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    
+    # 连接池配置
+    connection-timeout: 15000
+    requested-heartbeat: 30
+    
+    # 监听器配置
+    listener:
+      simple:
+        concurrency: 1
+        max-concurrency: 1
+        prefetch: 1
+        acknowledge-mode: manual
+        default-requeue-rejected: false
+        
+  # MySQL数据库配置 - 连接本地
+  datasource:
+    url: jdbc:mysql://localhost:3306/dt_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: Aa20250815!
+    
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+
+# TDengine配置 - 连接本地
+tdengine:
+  url: jdbc:TAOS-RS://localhost:6041/digital_twin
+  username: thingsboard
+  password: Aa20250815!
+
+opcua:
+  config:
+    gatewayId: ${GATEWAY_ID:3edacab0-8ee0-11f0-9b2e-c98e0632b81d}
+    serverUrl: ${SERVER_URL:http://127.0.0.1:8080}
+    username: ${OPC_USERNAME:tenant@thingsboard.org}
+    password: ${OPC_PASSWORD:Aa20250815!}
+
+# 日志配置 - 测试环境增加详细日志
+logging:
+  level:
+    com.digitaltwin: DEBUG
+    org.springframework.web.socket: DEBUG
+    org.springframework.amqp: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

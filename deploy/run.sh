@@ -6,6 +6,7 @@
 # 设置默认在前台运行
 BACKGROUND=false
 PORT=8081
+PROFILE=""
 
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
@@ -23,11 +24,21 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             ;;
+        --profile)
+            if [[ -n "$2" ]]; then
+                PROFILE="$2"
+                shift 2
+            else
+                echo "错误: --profile 参数需要指定配置文件名"
+                exit 1
+            fi
+            ;;
         -h|--help)
             echo "使用方法: $0 [选项]"
             echo "选项:"
             echo "  -b, --background  在后台启动应用"
             echo "  -p, --port <端口> 指定服务启动端口(默认: 8081)"
+            echo "  --profile <名称>  指定Spring配置文件(如: test, dev, prod)"
             echo "  -h, --help        显示帮助信息"
             exit 0
             ;;
@@ -53,6 +64,9 @@ echo "=== 数字孪生项目运行脚本 ==="
 echo ""
 echo "💻 操作系统: ${PLATFORM}"
 echo "🔌 端口: $PORT"
+if [ -n "$PROFILE" ]; then
+    echo "⚙️  配置文件: $PROFILE"
+fi
 if [ "$BACKGROUND" = true ]; then
     echo "🔄 启动模式: 后台运行"
 else
@@ -66,8 +80,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
-
-
 
 # 检查JAR文件是否存在
 JAR_FILE="websocket-server-1.0.0.jar"
@@ -89,11 +101,20 @@ fi
 # 设置日志文件
 LOG_FILE="$LOG_DIR/digital-twin-websocket.log"
 
+# 构建Java启动参数
+JAVA_ARGS="--server.port=$PORT"
+if [ -n "$PROFILE" ]; then
+    JAVA_ARGS="$JAVA_ARGS --spring.profiles.active=$PROFILE"
+fi
+
 # 启动应用
 echo "🚀 启动Spring Boot应用..."
 echo "📊 JAR文件: $JAR_FILE"
 echo "🔗 访问地址: http://localhost:$PORT/api"
 echo "📡 WebSocket端点: ws://localhost:$PORT/api/ws"
+if [ -n "$PROFILE" ]; then
+    echo "⚙️  激活配置: $PROFILE"
+fi
 echo ""
 
 # 检查后台启动模式
@@ -102,7 +123,7 @@ if [ "$BACKGROUND" = true ]; then
     echo "🔄 应用正在后台启动..."
     
     # 后台启动并记录日志
-    nohup java $JVM_OPTS -jar $JAR_FILE --server.port=$PORT > "$LOG_FILE" 2>&1 &
+    nohup java $JVM_OPTS -jar $JAR_FILE $JAVA_ARGS > "$LOG_FILE" 2>&1 &
     APP_PID=$!
     
     echo -e "${GREEN}✅ 应用启动成功！${NC}"
@@ -119,7 +140,7 @@ else
     echo ""
     
     # 前台启动并输出日志
-    java $JVM_OPTS -jar $JAR_FILE --server.port=$PORT
+    java $JVM_OPTS -jar $JAR_FILE $JAVA_ARGS
     
     # 如果应用意外退出，显示提示信息
     echo ""
