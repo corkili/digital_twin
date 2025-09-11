@@ -31,7 +31,7 @@ public class PointFailureRecordController {
         try {
             PointFailureRecordDto record = pointFailureRecordService.recordFailure(
                     request.getPointId(), 
-                    request.getDescription());
+                    request.getDescription(),"test");
             return ResponseEntity.ok(ApiResponse.success("故障记录创建成功", record));
         } catch (Exception e) {
             log.error("创建故障记录失败: {}", e.getMessage(), e);

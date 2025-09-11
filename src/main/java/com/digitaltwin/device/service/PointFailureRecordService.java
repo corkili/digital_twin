@@ -37,7 +37,7 @@ public class PointFailureRecordService {
      * @param description 故障描述
      * @return 故障记录DTO
      */
-    public PointFailureRecordDto recordFailure(Long pointId, String description) {
+    public PointFailureRecordDto recordFailure(Long pointId, String description,String value) {
         try {
             // 检查点位是否存在
             Point point = pointRepository.findById(pointId)
@@ -51,6 +51,7 @@ public class PointFailureRecordService {
             record.setFailureTime(now);
             // 设置故障开始时间
             record.setStartTime(now);
+            record.setFailureValue(value);
             // 初始状态为NEW
             record.setStatus("NEW");
             
