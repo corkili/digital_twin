@@ -25,10 +25,10 @@ public class KnowledgeListResponse {
     private boolean paginated;
     
     @Schema(description = "当前页码（分页时有效）", example = "0")
-    private Integer pageNumber;
+    private Integer page;
     
     @Schema(description = "每页数量（分页时有效）", example = "10") 
-    private Integer pageSize;
+    private Integer size;
     
     @Schema(description = "总元素数（分页时有效）", example = "50")
     private Long totalElements;
@@ -59,8 +59,8 @@ public class KnowledgeListResponse {
         KnowledgeListResponse response = new KnowledgeListResponse();
         response.setContent(page.getContent());
         response.setPaginated(true);
-        response.setPageNumber(page.getNumber());
-        response.setPageSize(page.getSize());
+        response.setPage(page.getNumber());
+        response.setSize(page.getSize());
         response.setTotalElements(page.getTotalElements());
         response.setTotalPages(page.getTotalPages());
         response.setLast(page.isLast());

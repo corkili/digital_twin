@@ -29,6 +29,10 @@ public class ExamRecord {
     @Column
     private LocalDateTime experimentTime;
 
+    // 成绩
+    @Column(name = "score")
+    private Double score;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

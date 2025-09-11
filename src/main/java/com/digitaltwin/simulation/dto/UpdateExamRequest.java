@@ -19,5 +19,8 @@ public class UpdateExamRequest {
 
     @Schema(description = "试验时间")
     private LocalDateTime experimentTime;
+
+    @Schema(description = "成绩")
+    private Double score;
 }
 

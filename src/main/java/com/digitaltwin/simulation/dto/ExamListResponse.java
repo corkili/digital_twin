@@ -20,10 +20,10 @@ public class ExamListResponse {
     private boolean paginated;
 
     @Schema(description = "页码")
-    private Integer pageNumber;
+    private Integer page;
 
     @Schema(description = "每页数量")
-    private Integer pageSize;
+    private Integer size;
 
     @Schema(description = "总元素")
     private Long totalElements;
@@ -48,8 +48,8 @@ public class ExamListResponse {
         ExamListResponse r = new ExamListResponse();
         r.setContent(page.getContent());
         r.setPaginated(true);
-        r.setPageNumber(page.getNumber());
-        r.setPageSize(page.getSize());
+        r.setPage(page.getNumber());
+        r.setSize(page.getSize());
         r.setTotalElements(page.getTotalElements());
         r.setTotalPages(page.getTotalPages());
         r.setLast(page.isLast());

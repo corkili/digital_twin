@@ -31,6 +31,7 @@ public class ExamService {
             e.setMode(request.getMode());
             e.setExperimentName(request.getExperimentName());
             e.setExperimentTime(request.getExperimentTime());
+            e.setScore(request.getScore());
             return ExamDto.fromEntity(examRepository.save(e));
         } catch (Exception ex) {
             log.error("创建Exam失败: {}", ex.getMessage(), ex);
@@ -70,6 +71,7 @@ public class ExamService {
             if (request.getMode() != null) e.setMode(request.getMode());
             if (request.getExperimentName() != null) e.setExperimentName(request.getExperimentName());
             if (request.getExperimentTime() != null) e.setExperimentTime(request.getExperimentTime());
+            if (request.getScore() != null) e.setScore(request.getScore());
             return ExamDto.fromEntity(examRepository.save(e));
         });
     }
