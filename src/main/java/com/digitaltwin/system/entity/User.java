@@ -32,6 +32,12 @@ public class User {
 
     @Column(name = "auap_user_id", length = 50)
     private String auapUserId;
+    
+    @Column(name = "role", length = 50)
+    private String role = "普通用户"; // 默认角色为普通用户
+
+    @Column(name = "description", length = 500)
+    private String description; // 用户描述
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

@@ -8,4 +8,5 @@ public class CreateUserRequest {
     private String password;
     private String email;
     private String fullName;
+    private String description; // 用户描述
 }

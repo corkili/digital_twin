@@ -22,7 +22,7 @@ public class UserController {
     
     @Autowired
     private JwtUtil jwtUtil;
-    
+
 
     /**
      * 获取所有用户
@@ -93,15 +93,15 @@ public class UserController {
     public ResponseEntity<ApiResponse> login(@RequestBody LoginRequest request) {
         // 本地用户验证
         Optional<User> userOptional = userService.findUserByUsername(request.getUsername());
-        
+
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            
+
             // 验证密码
             if (userService.checkPassword(request.getPassword(), user.getPassword())) {
                 // 构建登录响应
                 LoginResponse loginResponse = new LoginResponse();
-                
+
                 UserDto userDto = new UserDto();
                 userDto.setId(user.getId());
                 userDto.setUsername(user.getUsername());
@@ -109,15 +109,17 @@ public class UserController {
                 userDto.setFullName(user.getFullName());
                 userDto.setDeptId(user.getDeptId());
                 userDto.setDeptName(user.getDeptName());
+                userDto.setRole(user.getRole()); // 设置用户角色
+                userDto.setDescription(user.getDescription()); // 设置用户描述
                 userDto.setCreatedAt(user.getCreatedAt());
                 userDto.setUpdatedAt(user.getUpdatedAt());
-                
+
                 loginResponse.setUser(userDto);
-                
+
                 // 生成JWT token
                 String token = jwtUtil.generateToken(user.getId(), user.getUsername());
                 loginResponse.setToken(token);
-                
+
                 return ResponseEntity.ok(ApiResponse.success("登录成功", loginResponse));
             }
         }
@@ -140,6 +142,8 @@ public class UserController {
             userDto.setFullName(currentUser.getFullName());
             userDto.setDeptId(currentUser.getDeptId());
             userDto.setDeptName(currentUser.getDeptName());
+            userDto.setRole(currentUser.getRole()); // 设置用户角色
+            userDto.setDescription(currentUser.getDescription()); // 设置用户描述
             userDto.setCreatedAt(currentUser.getCreatedAt());
             userDto.setUpdatedAt(currentUser.getUpdatedAt());
             

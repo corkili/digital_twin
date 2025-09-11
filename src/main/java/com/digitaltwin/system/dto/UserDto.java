@@ -12,6 +12,8 @@ public class UserDto {
     private String deptId;
     private String deptName;
     private String auapUserId;
+    private String role; // 用户角色
+    private String description; // 用户描述
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
