@@ -106,6 +106,14 @@ springdoc:
 external:
   auth:
     url: http://your-auth-server.com/api/authenticate
+
+# MinIO配置
+minio:
+  endpoint: http://umi.xyz:9000
+  access-key: thingsboard
+  secret-key: Aa20250815!
+  bucket-name: digital-twin-files
+  region: us-east-1
     
 # 自定义配置
 websocket:
