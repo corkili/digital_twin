@@ -10,6 +10,6 @@ import java.util.List;
 
 @Repository
 public interface ExamRepository extends JpaRepository<ExamRecord, Long> {
-    List<ExamRecord> findByAuapUserIdIn(List<String> auapUserIds);
-    Page<ExamRecord> findByAuapUserIdIn(List<String> auapUserIds, Pageable pageable);
+    List<ExamRecord> findByUserIdIn(List<Long> userIds);
+    Page<ExamRecord> findByUserIdIn(List<Long> userIds, Pageable pageable);
 }

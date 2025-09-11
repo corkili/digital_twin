@@ -4,7 +4,6 @@ import com.digitaltwin.device.dto.ApiResponse;
 import com.digitaltwin.system.dto.*;
 import com.digitaltwin.system.entity.User;
 import com.digitaltwin.system.service.UserService;
-import com.digitaltwin.system.service.ExternalAuthService;
 import com.digitaltwin.system.util.JwtUtil;
 import com.digitaltwin.system.util.SecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +23,6 @@ public class UserController {
     @Autowired
     private JwtUtil jwtUtil;
     
-    @Autowired
-    private ExternalAuthService externalAuthService;
 
     /**
      * 获取所有用户
@@ -90,40 +87,39 @@ public class UserController {
     }
 
     /**
-     * 用户登录 - 使用外部认证
+     * 用户登录 - 本地密码验证
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse> login(@RequestBody LoginRequest request) {
-        // 调用外部认证接口
-        ExternalUserInfo externalUserInfo = externalAuthService.authenticate(
-            request.getUsername(), request.getPassword());
+        // 本地用户验证
+        Optional<User> userOptional = userService.findUserByUsername(request.getUsername());
         
-        if (externalUserInfo != null) {
-            // 认证成功，创建或更新本地用户
-            User user = userService.createOrUpdateUserFromExternal(
-                request.getUsername(), externalUserInfo);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
             
-            // 构建登录响应
-            LoginResponse loginResponse = new LoginResponse();
-            
-            UserDto userDto = new UserDto();
-            userDto.setId(user.getId());
-            userDto.setUsername(user.getUsername());
-            userDto.setEmail(user.getEmail());
-            userDto.setFullName(user.getFullName());
-            userDto.setDeptId(user.getDeptId());
-            userDto.setDeptName(user.getDeptName());
-            userDto.setAuapUserId(user.getAuapUserId());
-            userDto.setCreatedAt(user.getCreatedAt());
-            userDto.setUpdatedAt(user.getUpdatedAt());
-            
-            loginResponse.setUser(userDto);
-            
-            // 生成JWT token
-            String token = jwtUtil.generateToken(user.getId(), user.getUsername());
-            loginResponse.setToken(token);
-            
-            return ResponseEntity.ok(ApiResponse.success("登录成功", loginResponse));
+            // 验证密码
+            if (userService.checkPassword(request.getPassword(), user.getPassword())) {
+                // 构建登录响应
+                LoginResponse loginResponse = new LoginResponse();
+                
+                UserDto userDto = new UserDto();
+                userDto.setId(user.getId());
+                userDto.setUsername(user.getUsername());
+                userDto.setEmail(user.getEmail());
+                userDto.setFullName(user.getFullName());
+                userDto.setDeptId(user.getDeptId());
+                userDto.setDeptName(user.getDeptName());
+                userDto.setCreatedAt(user.getCreatedAt());
+                userDto.setUpdatedAt(user.getUpdatedAt());
+                
+                loginResponse.setUser(userDto);
+                
+                // 生成JWT token
+                String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+                loginResponse.setToken(token);
+                
+                return ResponseEntity.ok(ApiResponse.success("登录成功", loginResponse));
+            }
         }
         
         return ResponseEntity.badRequest().body(ApiResponse.error("用户名或密码错误"));
@@ -144,7 +140,6 @@ public class UserController {
             userDto.setFullName(currentUser.getFullName());
             userDto.setDeptId(currentUser.getDeptId());
             userDto.setDeptName(currentUser.getDeptName());
-            userDto.setAuapUserId(currentUser.getAuapUserId());
             userDto.setCreatedAt(currentUser.getCreatedAt());
             userDto.setUpdatedAt(currentUser.getUpdatedAt());
             

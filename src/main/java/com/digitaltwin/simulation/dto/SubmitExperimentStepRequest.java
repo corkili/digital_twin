@@ -14,8 +14,9 @@ public class SubmitExperimentStepRequest {
     @Schema(description = "用户ID", required = true, example = "123")
     private Long userId;
     
-    @Schema(description = "用户AUAP ID", required = true, example = "auap_user_001")
-    private String auapUserId;
+    // 暂时不使用
+    // @Schema(description = "用户AUAP ID", required = true, example = "auap_user_001")
+    // private String auapUserId;
     
     @Schema(description = "基于的试验模板ID", required = true, example = "456")
     private Long targetExperimentId;

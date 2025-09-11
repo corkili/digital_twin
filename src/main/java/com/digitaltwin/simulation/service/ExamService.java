@@ -31,7 +31,7 @@ public class ExamService {
     public ExamDto createExam(CreateExamRequest request) {
         try {
             ExamRecord e = new ExamRecord();
-            e.setAuapUserId(request.getAuapUserId());
+            e.setUserId(request.getUserId());
             e.setMode(request.getMode());
             e.setExperimentName(request.getExperimentName());
             e.setExperimentTime(request.getExperimentTime());
@@ -46,21 +46,21 @@ public class ExamService {
     }
     
     /**
-     * 根据auapUserId创建考试记录（用于仿真系统自动创建）
+     * 根据userId创建考试记录（用于仿真系统自动创建）
      */
-    public ExamDto createExamByAuapUserId(String auapUserId, String mode, String experimentName, 
-                                         LocalDateTime experimentTime, Integer score) {
+    public ExamDto createExamByUserId(Long userId, String mode, String experimentName, 
+                                     LocalDateTime experimentTime, Integer score) {
         try {
             ExamRecord e = new ExamRecord();
-            e.setAuapUserId(auapUserId);
+            e.setUserId(userId);
             e.setMode(mode);
             e.setExperimentName(experimentName);
             e.setExperimentTime(experimentTime);
             e.setScore(score);
             
             ExamRecord savedExam = examRepository.save(e);
-            log.info("自动创建考试记录: auapUserId={}, experimentName={}, score={}", 
-                    auapUserId, experimentName, score);
+            log.info("自动创建考试记录: userId={}, experimentName={}, score={}", 
+                    userId, experimentName, score);
             return createExamDtoWithUserName(savedExam);
         } catch (Exception ex) {
             log.error("自动创建Exam失败: {}", ex.getMessage(), ex);
@@ -87,16 +87,16 @@ public class ExamService {
     public List<ExamDto> searchByUserName(String userName) {
         // 通过用户姓名搜索，需要联表查询
         List<User> users = userRepository.findByFullNameContainingIgnoreCase(userName);
-        List<String> auapUserIds = users.stream()
-                .map(User::getAuapUserId)
-                .filter(auapUserId -> auapUserId != null)
+        List<Long> userIds = users.stream()
+                .map(User::getId)
+                .filter(userId -> userId != null)
                 .collect(Collectors.toList());
         
-        if (auapUserIds.isEmpty()) {
+        if (userIds.isEmpty()) {
             return List.of();
         }
         
-        return examRepository.findByAuapUserIdIn(auapUserIds)
+        return examRepository.findByUserIdIn(userIds)
                 .stream().map(this::createExamDtoWithUserName)
                 .collect(Collectors.toList());
     }
@@ -104,27 +104,27 @@ public class ExamService {
     public Page<ExamDto> searchByUserNameWithPagination(String userName, int page, int size, String sortBy, String sortDir) {
         // 通过用户姓名搜索，需要联表查询
         List<User> users = userRepository.findByFullNameContainingIgnoreCase(userName);
-        List<String> auapUserIds = users.stream()
-                .map(User::getAuapUserId)
-                .filter(auapUserId -> auapUserId != null)
+        List<Long> userIds = users.stream()
+                .map(User::getId)
+                .filter(userId -> userId != null)
                 .collect(Collectors.toList());
         
-        if (auapUserIds.isEmpty()) {
+        if (userIds.isEmpty()) {
             Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
             Pageable pageable = PageRequest.of(page, size, sort);
-            return examRepository.findByAuapUserIdIn(List.of("NONEXISTENT"), pageable)
+            return examRepository.findByUserIdIn(List.of(-1L), pageable)
                     .map(this::createExamDtoWithUserName);
         }
         
         Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
-        return examRepository.findByAuapUserIdIn(auapUserIds, pageable)
+        return examRepository.findByUserIdIn(userIds, pageable)
                 .map(this::createExamDtoWithUserName);
     }
 
     public Optional<ExamDto> update(Long id, UpdateExamRequest request) {
         return examRepository.findById(id).map(e -> {
-            if (request.getAuapUserId() != null) e.setAuapUserId(request.getAuapUserId());
+            if (request.getUserId() != null) e.setUserId(request.getUserId());
             if (request.getMode() != null) e.setMode(request.getMode());
             if (request.getExperimentName() != null) e.setExperimentName(request.getExperimentName());
             if (request.getExperimentTime() != null) e.setExperimentTime(request.getExperimentTime());
@@ -146,8 +146,8 @@ public class ExamService {
         if (examRecord == null) return null;
         
         String userName = "未知用户";
-        if (examRecord.getAuapUserId() != null) {
-            Optional<User> userOpt = userRepository.findByAuapUserId(examRecord.getAuapUserId());
+        if (examRecord.getUserId() != null) {
+            Optional<User> userOpt = userRepository.findById(examRecord.getUserId());
             if (userOpt.isPresent() && userOpt.get().getFullName() != null) {
                 userName = userOpt.get().getFullName();
             }

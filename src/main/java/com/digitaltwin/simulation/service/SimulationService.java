@@ -306,20 +306,20 @@ public class SimulationService {
             }
             
             // 调用ExamService创建考试记录
-            examService.createExamByAuapUserId(
-                request.getAuapUserId(),
+            examService.createExamByUserId(
+                request.getUserId(),
                 "自动", // 模式设为自动
                 experimentName,
                 LocalDateTime.now(), // 考试时间为当前时间
                 score
             );
             
-            log.info("自动创建Exam记录成功: auapUserId={}, experimentName={}, score={}", 
-                    request.getAuapUserId(), experimentName, score);
+            log.info("自动创建Exam记录成功: userId={}, experimentName={}, score={}", 
+                    request.getUserId(), experimentName, score);
             
         } catch (Exception e) {
-            log.error("自动创建Exam记录失败: auapUserId={}, error={}", 
-                    request.getAuapUserId(), e.getMessage(), e);
+            log.error("自动创建Exam记录失败: userId={}, error={}", 
+                    request.getUserId(), e.getMessage(), e);
             throw e;
         }
     }

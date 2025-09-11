@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 @Data
 @Schema(description = "更新评定考核请求")
 public class UpdateExamRequest {
-    @Schema(description = "用户AUAP ID")
-    private String auapUserId;
+    @Schema(description = "用户ID")
+    private Long userId;
 
     @Schema(description = "模式(手动/自动)")
     private String mode;

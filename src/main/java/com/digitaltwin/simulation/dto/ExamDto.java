@@ -16,8 +16,8 @@ public class ExamDto {
     @Schema(description = "ID", example = "1")
     private Long id;
 
-    @Schema(description = "用户AUAP ID", example = "auap_user_001")
-    private String auapUserId;
+    @Schema(description = "用户ID", example = "123")
+    private Long userId;
 
     @Schema(description = "用户姓名（联查获取）", example = "张三")
     private String userName;
@@ -41,7 +41,7 @@ public class ExamDto {
         if (e == null) return null;
         ExamDto dto = new ExamDto();
         dto.setId(e.getId());
-        dto.setAuapUserId(e.getAuapUserId());
+        dto.setUserId(e.getUserId());
         // userName 需要在Service层通过联查设置
         dto.setMode(e.getMode());
         dto.setExperimentName(e.getExperimentName());

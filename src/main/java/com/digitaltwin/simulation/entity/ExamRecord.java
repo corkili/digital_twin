@@ -13,9 +13,9 @@ public class ExamRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 用户AUAP ID
-    @Column(name = "auap_user_id", nullable = false, length = 50)
-    private String auapUserId;
+    // 用户ID
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     // 模式：手动/自动
     @Column(nullable = false, length = 20)
