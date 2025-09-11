@@ -108,7 +108,8 @@ public class RabbitMQConsumerService {
                             // 没有活动的故障记录，创建新的故障记录
                             pointFailureRecordService.recordFailure(
                                 point.getId(), 
-                                "EStop点位值为true，触发紧急停止状态，值为: " + estopValue
+                                "EStop点位值为true，触发紧急停止状态，值为: " + estopValue,
+                                    estopValue.toString()
                             );
                             log.info("检测到EStop点位值为true，已记录故障开始时间，点位ID: {}", point.getId());
                         }

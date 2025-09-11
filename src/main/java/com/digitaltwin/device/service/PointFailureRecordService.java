@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PointFailureRecordService {
     
     private final PointFailureRecordRepository pointFailureRecordRepository;
@@ -37,7 +39,8 @@ public class PointFailureRecordService {
      * @param description 故障描述
      * @return 故障记录DTO
      */
-    public PointFailureRecordDto recordFailure(Long pointId, String description) {
+    @Transactional
+    public PointFailureRecordDto recordFailure(Long pointId, String description,String value) {
         try {
             // 检查点位是否存在
             Point point = pointRepository.findById(pointId)
@@ -51,6 +54,7 @@ public class PointFailureRecordService {
             record.setFailureTime(now);
             // 设置故障开始时间
             record.setStartTime(now);
+            record.setFailureValue(value);
             // 初始状态为NEW
             record.setStatus("NEW");
             
@@ -92,6 +96,7 @@ public class PointFailureRecordService {
      * @param description 解决描述
      * @return 更新后的故障记录DTO
      */
+    @Transactional
     public PointFailureRecordDto resolveFailure(Long recordId, String description) {
         try {
             PointFailureRecord record = pointFailureRecordRepository.findById(recordId)
