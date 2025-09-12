@@ -12,6 +12,7 @@ import com.digitaltwin.system.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -19,7 +20,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -72,14 +78,46 @@ public class GroupController {
      * 获取所有分组
      *
      * @return 分组列表
+     * @deprecated 推荐使用分页接口 /groups?page=0&size=10 以提高性能
      */
     @GetMapping
+    @Deprecated
     public ResponseEntity<ApiResponse> getAllGroups() {
         List<Group> groups = groupService.getAllGroups();
-        List<GroupDto> groupDtos = groups.stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        List<GroupDto> groupDtos = convertGroupsToDtos(groups);
         return ResponseEntity.ok(ApiResponse.success("查询成功", groupDtos));
+    }
+    
+    /**
+     * 分页获取分组列表
+     *
+     * @param page 页码（从0开始，默认为0）
+     * @param size 每页大小（默认为10）
+     * @param sort 排序字段（默认为id）
+     * @return 分页分组列表
+     */
+    @GetMapping(params = {"page", "size"})
+    public ResponseEntity<ApiResponse> getGroupsWithPagination(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sort) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
+            List<Group> groups = groupService.getAllGroups();
+            
+            // 手动分页
+            int start = Math.min((int) pageable.getOffset(), groups.size());
+            int end = Math.min(start + pageable.getPageSize(), groups.size());
+            List<Group> pagedGroups = groups.subList(start, end);
+            
+            List<GroupDto> groupDtos = convertGroupsToDtos(pagedGroups);
+            
+            return ResponseEntity.ok(ApiResponse.success("查询成功", 
+                    new PageImpl<>(groupDtos, pageable, groups.size())));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("查询失败: " + e.getMessage()));
+        }
     }
     
     /**
@@ -215,7 +253,9 @@ public class GroupController {
      *
      * @param group Group实体
      * @return GroupDto对象
+     * @deprecated 仅用于单个实体转换，批量转换请使用convertGroupsToDtos方法
      */
+    @Deprecated
     private GroupDto convertToDto(Group group) {
         GroupDto dto = new GroupDto();
         BeanUtils.copyProperties(group, dto);
@@ -229,6 +269,92 @@ public class GroupController {
         }
         
         return dto;
+    }
+    
+    /**
+     * 批量将Group实体列表转换为GroupDto列表
+     * 优化点：收集所有需要查询的用户ID，一次性获取所有用户信息，避免N+1查询问题
+     *
+     * @param groups Group实体列表
+     * @return GroupDto对象列表
+     */
+    private List<GroupDto> convertGroupsToDtos(List<Group> groups) {
+        // 收集所有需要查询的用户ID
+        Set<Long> userIds = new HashSet<>();
+        
+        for (Group group : groups) {
+            // 检查分组的points
+            if (group.getPoints() != null) {
+                for (Point point : group.getPoints()) {
+                    if (point.getCreatedBy() != null) {
+                        userIds.add(point.getCreatedBy());
+                    }
+                    if (point.getUpdatedBy() != null) {
+                        userIds.add(point.getUpdatedBy());
+                    }
+                }
+            }
+        }
+        
+        // 一次性获取所有用户信息（当前没有findAllById方法，使用findAll后在内存中过滤）
+        Map<Long, UserDto> userMap = new HashMap<>();
+        List<UserDto> allUsers = userService.findAll();
+        for (UserDto user : allUsers) {
+            if (userIds.contains(user.getId())) {
+                userMap.put(user.getId(), user);
+            }
+        }
+        
+        // 转换分组列表
+        List<GroupDto> dtos = new ArrayList<>();
+        for (Group group : groups) {
+            GroupDto dto = new GroupDto();
+            BeanUtils.copyProperties(group, dto);
+            
+            // 转换points集合
+            if (group.getPoints() != null) {
+                List<PointDto> pointDtos = new ArrayList<>();
+                for (Point point : group.getPoints()) {
+                    PointDto pointDto = new PointDto();
+                    pointDto.setId(point.getId());
+                    pointDto.setIdentity(point.getIdentity());
+                    pointDto.setWriteable(point.getWriteable());
+                    pointDto.setUnit(point.getUnit());
+                    pointDto.setAlarmable(point.getAlarmable());
+                    pointDto.setUpperLimit(point.getUpperLimit());
+                    pointDto.setUpperHighLimit(point.getUpperHighLimit());
+                    pointDto.setLowerLimit(point.getLowerLimit());
+                    pointDto.setLowerLowLimit(point.getLowerLowLimit());
+                    pointDto.setPublishMethod(point.getPublishMethod());
+                    pointDto.setIsDefaultDisplay(point.getIsDefaultDisplay());
+                    if (point.getDevice() != null) {
+                        pointDto.setDeviceId(point.getDevice().getId());
+                    }
+                    
+                    // 设置审计字段
+                    pointDto.setCreatedBy(point.getCreatedBy());
+                    pointDto.setCreatedAt(point.getCreatedAt());
+                    pointDto.setUpdatedBy(point.getUpdatedBy());
+                    pointDto.setUpdatedAt(point.getUpdatedAt());
+                    
+                    // 设置创建人和修改人的用户名（从缓存的用户映射中获取，避免重复查询）
+                    if (point.getCreatedBy() != null && userMap.containsKey(point.getCreatedBy())) {
+                        pointDto.setCreatedByName(userMap.get(point.getCreatedBy()).getUsername());
+                    }
+                    
+                    if (point.getUpdatedBy() != null && userMap.containsKey(point.getUpdatedBy())) {
+                        pointDto.setUpdatedByName(userMap.get(point.getUpdatedBy()).getUsername());
+                    }
+                    
+                    pointDtos.add(pointDto);
+                }
+                dto.setPoints(pointDtos);
+            }
+            
+            dtos.add(dto);
+        }
+        
+        return dtos;
     }
     
     /**
