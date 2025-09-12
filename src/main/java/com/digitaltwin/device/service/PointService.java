@@ -13,6 +13,7 @@ import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.repository.ChannelRepository;
 import com.digitaltwin.device.repository.DeviceRepository;
 import com.digitaltwin.device.repository.PointRepository;
+import com.digitaltwin.system.dto.UserDto;
 import com.digitaltwin.system.entity.User;
 import com.digitaltwin.system.service.UserService;
 import com.digitaltwin.system.util.SecurityContext;
@@ -27,12 +28,18 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -162,14 +169,114 @@ public class PointService {
     }
 
     /**
-     * 获取所有点位
+     * 获取所有点位 - 优化版本
      *
      * @return 点位DTO列表
      */
     public List<PointDto> getAllPoints() {
-        return pointRepository.findAll().stream()
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
+        // 使用优化的查询方式，减少N+1问题
+        List<Point> points = pointRepository.findAll();
+        return convertPointsToDtos(points);
+    }
+
+    /**
+     * 获取点位列表（分页版）- 推荐使用此接口替代getAllPoints以提高性能
+     * 
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @return 分页的点位DTO列表
+     */
+    public Page<PointDto> getPointsWithPagination(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Point> pointPage = pointRepository.findAll(pageable);
+        
+        // 使用批量转换方法优化性能
+        List<PointDto> dtos = convertPointsToDtos(pointPage.getContent());
+        return new PageImpl<>(dtos, pageable, pointPage.getTotalElements());
+    }
+
+    /**
+     * 批量转换Point实体列表为PointDto列表，优化性能
+     * 
+     * @param points Point实体列表
+     * @return PointDto列表
+     */
+    private List<PointDto> convertPointsToDtos(List<Point> points) {
+        if (points.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // 收集所有需要查询的用户ID
+        Set<Long> userIds = new HashSet<>();
+        for (Point point : points) {
+            if (point.getCreatedBy() != null) {
+                userIds.add(point.getCreatedBy());
+            }
+            if (point.getUpdatedBy() != null) {
+                userIds.add(point.getUpdatedBy());
+            }
+        }
+        
+        // 批量查询用户信息，避免N+1查询
+        Map<Long, String> userIdToNameMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            // 由于UserService没有findAllById方法，我们使用findAll并在内存中过滤
+            List<UserDto> allUsers = userService.findAll();
+            for (UserDto user : allUsers) {
+                if (userIds.contains(user.getId())) {
+                    userIdToNameMap.put(user.getId(), user.getUsername());
+                }
+            }
+        }
+        
+        // 批量转换
+        List<PointDto> dtos = new ArrayList<>(points.size());
+        for (Point point : points) {
+            PointDto dto = new PointDto();
+            dto.setId(point.getId());
+            dto.setIdentity(point.getIdentity());
+            dto.setPath(point.getPath());
+            dto.setWriteable(point.getWriteable());
+            dto.setUnit(point.getUnit());
+            dto.setAlarmable(point.getAlarmable());
+            dto.setUpperLimit(point.getUpperLimit());
+            dto.setUpperHighLimit(point.getUpperHighLimit());
+            dto.setLowerLimit(point.getLowerLimit());
+            dto.setLowerLowLimit(point.getLowerLowLimit());
+            dto.setPublishMethod(point.getPublishMethod());
+            dto.setHz(point.getHz());
+            dto.setIsDefaultDisplay(point.getIsDefaultDisplay());
+            
+            if (point.getDevice() != null) {
+                dto.setDeviceId(point.getDevice().getId());
+                dto.setDeviceName(point.getDevice().getName());
+                dto.setChannelName(point.getDevice().getChannel().getName());
+            }
+
+            // 设置审计字段
+            dto.setCreatedBy(point.getCreatedBy());
+            dto.setCreatedAt(point.getCreatedAt());
+            dto.setUpdatedBy(point.getUpdatedBy());
+            dto.setUpdatedAt(point.getUpdatedAt());
+
+            // 设置创建人和修改人的用户名（从批量查询结果中获取）
+            if (point.getCreatedBy() != null) {
+                dto.setCreatedByName(userIdToNameMap.get(point.getCreatedBy()));
+            }
+
+            if (point.getUpdatedBy() != null) {
+                dto.setUpdatedByName(userIdToNameMap.get(point.getUpdatedBy()));
+            }
+            
+            // 设置数据采集统计字段
+            dto.setLastCollectionTime(point.getLastCollectionTime());
+            dto.setTotalCollectionDuration(point.getTotalCollectionDuration());
+            dto.setTotalCollectionCount(point.getTotalCollectionCount());
+            
+            dtos.add(dto);
+        }
+        
+        return dtos;
     }
 
     /**
@@ -409,6 +516,7 @@ public class PointService {
      * @return PointDto
      */
     private PointDto convertToDto(Point point) {
+        // 注意：此方法仍保留用于单个对象转换的场景，但在批量转换时推荐使用convertPointsToDtos方法
         PointDto dto = new PointDto();
         dto.setId(point.getId());
         dto.setIdentity(point.getIdentity());
