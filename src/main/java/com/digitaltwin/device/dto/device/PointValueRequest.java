@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class PointValueRequest {
-    private Double value;
+    private Object value;
 }

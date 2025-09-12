@@ -54,7 +54,11 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: Aa20250815!
-    
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 30000
 # TDengine配置
 tdengine:
   url: jdbc:TAOS-RS://umi.xyz:6041/digital_twin

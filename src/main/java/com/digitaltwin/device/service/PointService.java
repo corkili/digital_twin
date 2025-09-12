@@ -20,6 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.milo.opcua.sdk.client.OpcUaClient;
+import org.eclipse.milo.opcua.stack.core.UaException;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -459,10 +466,29 @@ public class PointService {
         // 查询点位信息
         Point point = pointRepository.findById(pointId)
                 .orElseThrow(() -> new RuntimeException("Point not found with id: " + pointId));
-        
-        // TODO: 您的点位值设置逻辑在这里实现
-        // 这里只是查询出点位信息，具体设置逻辑需要您来实现
-        // 可以通过point变量获取点位的所有信息
+        String serverUrl = point.getDevice().getChannel().getServerUrl();
+        String identity = point.getIdentity();
+
+        try {
+            OpcUaClient client = OpcUaClient.create("opc.tcp://localhost:4334/UA/NodeJSServer");
+            client.connect().get();
+            NodeId nodeId = new NodeId(1, identity);
+            // 2. 写入值
+            DataValue value = new DataValue(new Variant(request.getValue()));
+            StatusCode status = client.writeValue(nodeId, value).get();
+            if(status.isBad()){
+                throw new RuntimeException("写入失败: " + status);
+            }
+            System.out.println("写入状态: " + status);
+
+            client.disconnect().get();
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (UaException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
