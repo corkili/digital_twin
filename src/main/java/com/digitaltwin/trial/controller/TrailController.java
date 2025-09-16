@@ -129,9 +129,6 @@ public class TrailController {
             long endTime = trial.getEndTimestamp() != null ? trial.getEndTimestamp() : now;
             
             try {
-                // 在进入for循环前，完成时间区间拆分
-                List<TimeRange> timeRanges = splitTimeRange(startTime, endTime, 1000);
-                
                 // 存储所有CompletableFuture的列表
                 List<CompletableFuture<Void>> futures = new ArrayList<>();
                 
@@ -139,32 +136,28 @@ public class TrailController {
                 for (Point point : points) {
                     // 注意for循环变量逃逸问题，创建final变量
                     final String pointIdentity = point.getIdentity();
-                    
-                    // 为每个点位的每个时间区间创建一个CompletableFuture
-                    for (TimeRange range : timeRanges) {
-                        final long rangeStartTime = range.getStartTime();
-                        final long rangeEndTime = range.getEndTime();
-                        
-                        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                            List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
-                                    rangeStartTime, 
-                                    rangeEndTime,
-                                    pointIdentity);
-                            
-                            // 同步处理dataMap，注意并发安全问题
-                            synchronized (dataMap) {
-                                for (Map<String, Object> pointData : pointDataList) {
-                                    java.sql.Timestamp ts = (java.sql.Timestamp) pointData.get("ts");
-                                    Long timestamp = ts.getTime();
-                                    String value = (String) pointData.get("point_value");
-                                    
-                                    dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(pointIdentity, value);
-                                }
+
+                    // 为每个点位的时间区间创建一个CompletableFuture
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                        List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
+                            startTime,
+                            endTime,
+                            pointIdentity
+                        );
+
+                        // 同步处理dataMap，注意并发安全问题
+                        synchronized (dataMap) {
+                            for (Map<String, Object> pointData : pointDataList) {
+                                java.sql.Timestamp ts = (java.sql.Timestamp) pointData.get("ts");
+                                Long timestamp = ts.getTime();
+                                String value = (String) pointData.get("point_value");
+
+                                dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(pointIdentity, value);
                             }
-                        }, executorService);
-                        
-                        futures.add(future);
-                    }
+                        }
+                    }, executorService);
+
+                    futures.add(future);
                 }
                 
                 // 等待所有任务完成
