@@ -194,6 +194,24 @@ public class PointService {
         List<PointDto> dtos = convertPointsToDtos(pointPage.getContent());
         return new PageImpl<>(dtos, pageable, pointPage.getTotalElements());
     }
+    
+    /**
+     * 获取点位列表（分页版带搜索）- 支持通过identity进行模糊匹配查询
+     * 
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @param identity 点位标识（模糊匹配）
+     * @return 分页的点位DTO列表
+     */
+    public Page<PointDto> getPointsWithPagination(int page, int size, String identity) {
+        Pageable pageable = PageRequest.of(page, size);
+        // 使用现有的findAllPointsByFilters方法支持identity模糊匹配
+        Page<Point> pointPage = pointRepository.findAllPointsByFilters(identity, null, pageable);
+        
+        // 使用批量转换方法优化性能
+        List<PointDto> dtos = convertPointsToDtos(pointPage.getContent());
+        return new PageImpl<>(dtos, pageable, pointPage.getTotalElements());
+    }
 
     /**
      * 批量转换Point实体列表为PointDto列表，优化性能

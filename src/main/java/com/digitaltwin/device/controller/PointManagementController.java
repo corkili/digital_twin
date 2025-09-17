@@ -9,6 +9,8 @@ import com.digitaltwin.device.dto.device.PointValueRequest;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
 import com.digitaltwin.device.service.PointService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,11 +71,39 @@ public class PointManagementController {
     /**
      * 获取所有点位
      * @return 点位列表
+     * @deprecated 推荐使用分页接口 /points?page=0&size=10 以提高性能
      */
     @GetMapping
+    @Deprecated
     public ResponseEntity<ApiResponse> getAllPoints() {
         try {
             List<PointDto> points = pointService.getAllPoints();
+            return ResponseEntity.ok(ApiResponse.success("Points retrieved successfully", points));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve points: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 分页获取点位列表
+     * @param page 页码（从0开始，默认为0）
+     * @param size 每页大小（默认为10）
+     * @param identity 点位标识（可选，用于模糊匹配）
+     * @return 分页的点位列表
+     */
+    @GetMapping(params = {"page", "size"})
+    public ResponseEntity<ApiResponse> getPointsWithPagination(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String identity) {
+        try {
+            // 如果提供了identity参数，则调用带搜索功能的方法
+            Page<PointDto> points;
+            if (identity != null && !identity.isEmpty()) {
+                points = pointService.getPointsWithPagination(page, size, identity);
+            } else {
+                points = pointService.getPointsWithPagination(page, size);
+            }
             return ResponseEntity.ok(ApiResponse.success("Points retrieved successfully", points));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve points: " + e.getMessage()));
