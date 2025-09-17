@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/device/repair-guides")
+@RequestMapping("/device/repair-guides")
 public class RepairGuideController {
 
     @Autowired
