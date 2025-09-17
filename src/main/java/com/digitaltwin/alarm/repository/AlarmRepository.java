@@ -39,6 +39,9 @@ public interface AlarmRepository extends JpaRepository<Alarm, Long> {
     @Query("SELECT a FROM Alarm a WHERE a.deviceId = :deviceId ORDER BY a.timestamp DESC")
     List<Alarm> findLatestByDeviceId(@Param("deviceId") Long deviceId, Pageable pageable);
     
-    @Query("SELECT a FROM Alarm a WHERE a.pointId = :pointId AND a.deviceId = :deviceId AND a.alarmType = :alarmType AND a.endTimestamp IS NULL ORDER BY a.timestamp DESC")
-    List<Alarm> findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(@Param("pointId") String pointId, @Param("deviceId") Long deviceId, @Param("alarmType") String alarmType);
+    @Query("SELECT a FROM Alarm a WHERE a.pointId = :pointId AND a.alarmType = :alarmType AND (a.endTimestamp IS NULL OR a.endTimestamp = 0) ORDER BY a.timestamp DESC")
+    List<Alarm> findUnendedAlarmsByPointIdAndAlarmType(@Param("pointId") String pointId, @Param("alarmType") String alarmType);
+    
+    @Query("SELECT COUNT(a) FROM Alarm a WHERE a.pointId = :pointId AND a.timestamp >= :startTime")
+    Long countRecentAlarmsByPointId(@Param("pointId") String pointId, @Param("startTime") Long startTime);
 }

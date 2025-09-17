@@ -1,5 +1,6 @@
 package com.digitaltwin.alarm.service;
 
+import com.digitaltwin.alarm.config.AlarmConfig;
 import com.digitaltwin.alarm.dto.AlarmNotificationDTO;
 import com.digitaltwin.alarm.entity.Alarm;
 import com.digitaltwin.alarm.repository.AlarmRepository;
@@ -25,6 +26,7 @@ public class AlarmAnalysisService {
     private final PointCacheService pointCacheService;
     private final AlarmRepository alarmRepository;
     private final WebSocketPushService webSocketPushService;
+    private final AlarmConfig alarmConfig;
     
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
@@ -104,8 +106,8 @@ public class AlarmAnalysisService {
     private void analyzeBooleanAlarm(SensorData sensorData, Point point, Boolean value, String stringValue) {
         if (point.getStateAlarm() != null && value.equals(point.getStateAlarm())) {
             // 检查是否存在未结束的告警
-            List<Alarm> unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
-                    point.getIdentity(), point.getDevice().getId(), "状态告警");
+            List<Alarm> unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndAlarmType(
+                    point.getIdentity(), "状态告警");
             
             if (unendedAlarms.isEmpty()) {
                 // 如果不存在未结束的告警，则创建新的告警
@@ -175,8 +177,8 @@ public class AlarmAnalysisService {
      */
     private void handleNumericAlarm(SensorData sensorData, Point point, String pointValue, String alarmType, Double alarmThreshold) {
         // 检查是否存在未结束的告警
-        List<Alarm> unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
-                point.getIdentity(), point.getDevice().getId(), alarmType);
+        List<Alarm> unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndAlarmType(
+                point.getIdentity(), alarmType);
         
         if (unendedAlarms.isEmpty()) {
             // 如果不存在未结束的告警，则创建新的告警
@@ -203,25 +205,25 @@ public class AlarmAnalysisService {
         // 根据不同的告警类型查询未结束的告警
         switch (alarmType) {
             case "状态告警":
-                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
-                        point.getIdentity(), point.getDevice().getId(), alarmType);
+                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndAlarmType(
+                        point.getIdentity(), alarmType);
                 break;
             case "数值告警":
                 // 对于数值类型的告警，我们需要查询所有数值类型的未结束告警
                 // 这里简化处理，查询所有数值类型的告警
-                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
-                        point.getIdentity(), point.getDevice().getId(), "上上限告警");
-                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
-                        point.getIdentity(), point.getDevice().getId(), "上限告警"));
-                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
-                        point.getIdentity(), point.getDevice().getId(), "下下限告警"));
-                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
-                        point.getIdentity(), point.getDevice().getId(), "下限告警"));
+                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndAlarmType(
+                        point.getIdentity(), "上上限告警");
+                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndAlarmType(
+                        point.getIdentity(), "上限告警"));
+                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndAlarmType(
+                        point.getIdentity(), "下下限告警"));
+                unendedAlarms.addAll(alarmRepository.findUnendedAlarmsByPointIdAndAlarmType(
+                        point.getIdentity(), "下限告警"));
                 break;
             default:
                 // 默认情况，查询指定类型的未结束告警
-                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndDeviceIdAndAlarmType(
-                        point.getIdentity(), point.getDevice().getId(), alarmType);
+                unendedAlarms = alarmRepository.findUnendedAlarmsByPointIdAndAlarmType(
+                        point.getIdentity(), alarmType);
                 break;
         }
         
@@ -244,8 +246,23 @@ public class AlarmAnalysisService {
     private void createAlarm(SensorData sensorData, Point point, String pointValue, 
                            String alarmType, String alarmThreshold) {
         try {
+            // 计算时间窗口：过去N分钟
+            long currentTime = System.currentTimeMillis();
+            long startTime = currentTime - (alarmConfig.getDuplicatePreventionMinutes() * 60 * 1000L);
+            
+            // 查询在时间窗口内是否已存在该点位的告警（不论是否结束）
+            Long alarmCount = alarmRepository.countRecentAlarmsByPointId(
+                    point.getIdentity(), startTime);
+            
+            // 如果在时间窗口内已存在告警，则不创建新的告警
+            if (alarmCount > 0) {
+                log.debug("在过去{}分钟内已存在点位{}的告警，跳过创建新告警", 
+                        alarmConfig.getDuplicatePreventionMinutes(), point.getIdentity());
+                return;
+            }
+            
             Alarm alarm = new Alarm();
-            alarm.setTimestamp(System.currentTimeMillis());
+            alarm.setTimestamp(currentTime); // 使用当前时间作为告警产生时间
             alarm.setSensorId(sensorData.getID());
             alarm.setSensorTimestamp(sensorData.getRealTimestamp());
             alarm.setPointId(point.getIdentity());

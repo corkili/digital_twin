@@ -120,6 +120,10 @@ minio:
   region: us-east-1
     
 # 自定义配置
+alarm:
+  # 告警防重复时间间隔（分钟）
+  duplicate-prevention-minutes: 60
+
 websocket:
   # 主题配置
   topics:
