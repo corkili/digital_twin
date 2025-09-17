@@ -174,16 +174,27 @@ public class GroupController {
      *
      * @param pointId 点位ID
      * @param groupId 分组ID
-     * @return 更新后的点位信息
+     * @return 更新后的点位和分组信息
      */
     @PostMapping("/points/{pointId}/assign/{groupId}")
     public ResponseEntity<ApiResponse> assignPointToGroup(
             @PathVariable Long pointId,
             @PathVariable Long groupId) {
         try {
+            // 调用服务层分配点位
             Point point = groupService.assignPointToGroup(pointId, groupId);
             Group group = point.getGroup();
-            GroupDto groupDto = convertToDto(group);
+            
+            // 创建精简的GroupDto，不包含所有点位信息，只返回必要的分组和当前点位信息
+            GroupDto groupDto = new GroupDto();
+            BeanUtils.copyProperties(group, groupDto);
+            
+            // 只添加当前分配的点位信息，而不是所有分组内的点位
+            List<PointDto> pointDtos = new ArrayList<>();
+            PointDto currentPointDto = convertPointToDto(point);
+            pointDtos.add(currentPointDto);
+            groupDto.setPoints(pointDtos);
+            
             return ResponseEntity.ok(ApiResponse.success("点位分配成功", groupDto));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
