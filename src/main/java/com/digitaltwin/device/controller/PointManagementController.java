@@ -95,13 +95,18 @@ public class PointManagementController {
     public ResponseEntity<ApiResponse> getPointsWithPagination(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String identity) {
+            @RequestParam(required = false) String identity,
+            @RequestParam(required = false) Boolean published) {
         try {
-            // 如果提供了identity参数，则调用带搜索功能的方法
+            // 根据参数组合调用不同的服务方法
             Page<PointDto> points;
             if (identity != null && !identity.isEmpty()) {
-                points = pointService.getPointsWithPagination(page, size, identity);
+                points = pointService.getPointsWithPagination(page, size, identity, published);
+            } else if (published != null) {
+                // 如果只提供了published参数
+                points = pointService.getPointsWithPagination(page, size, null, published);
             } else {
+                // 默认查询全部
                 points = pointService.getPointsWithPagination(page, size);
             }
             return ResponseEntity.ok(ApiResponse.success("Points retrieved successfully", points));
@@ -187,12 +192,20 @@ public class PointManagementController {
 
     /**
      * 统计每个设备内的点位数量
+     * @param published 是否发布（可选参数，不传则统计所有点位）
      * @return 设备点位统计列表
      */
     @GetMapping("/count-by-device")
-    public ResponseEntity<ApiResponse> getPointCountByDevice() {
+    public ResponseEntity<ApiResponse> getPointCountByDevice(@RequestParam(required = false) Boolean published) {
         try {
-            List<DevicePointCountDto> countList = pointService.getPointCountByDevice();
+            List<DevicePointCountDto> countList;
+            if (published == null) {
+                // 未提供published参数，统计所有点位
+                countList = pointService.getPointCountByDevice();
+            } else {
+                // 提供了published参数，按发布状态筛选统计
+                countList = pointService.getPointCountByDevice(published);
+            }
             return ResponseEntity.ok(ApiResponse.success("Point count by device retrieved successfully", countList));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve point count by device: " + e.getMessage()));

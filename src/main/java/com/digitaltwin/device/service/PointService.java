@@ -205,8 +205,27 @@ public class PointService {
      */
     public Page<PointDto> getPointsWithPagination(int page, int size, String identity) {
         Pageable pageable = PageRequest.of(page, size);
-        // 使用现有的findAllPointsByFilters方法支持identity模糊匹配
+        // 使用原有的findAllPointsByFilters方法支持identity模糊匹配
         Page<Point> pointPage = pointRepository.findAllPointsByFilters(identity, null, pageable);
+        
+        // 使用批量转换方法优化性能
+        List<PointDto> dtos = convertPointsToDtos(pointPage.getContent());
+        return new PageImpl<>(dtos, pageable, pointPage.getTotalElements());
+    }
+    
+    /**
+     * 获取点位列表（分页版带搜索）- 支持通过identity进行模糊匹配查询和发布状态筛选
+     * 
+     * @param page 页码（从0开始）
+     * @param size 每页大小
+     * @param identity 点位标识（模糊匹配）
+     * @param published 是否发布（可选，用于筛选）
+     * @return 分页的点位DTO列表
+     */
+    public Page<PointDto> getPointsWithPagination(int page, int size, String identity, Boolean published) {
+        Pageable pageable = PageRequest.of(page, size);
+        // 使用新的findAllPointsByFiltersWithPublished方法支持identity模糊匹配和发布状态筛选
+        Page<Point> pointPage = pointRepository.findAllPointsByFiltersWithPublished(identity, null, published, pageable);
         
         // 使用批量转换方法优化性能
         List<PointDto> dtos = convertPointsToDtos(pointPage.getContent());
@@ -624,6 +643,35 @@ public class PointService {
     public List<DevicePointCountDto> getPointCountByDevice() {
         // 获取每个设备的点位数量统计
         List<Object[]> countResults = pointRepository.countPointsByDevice();
+        
+        // 获取所有相关的设备信息
+        List<Long> deviceIds = countResults.stream()
+                .map(result -> (Long) result[0])
+                .collect(Collectors.toList());
+        
+        List<Device> devices = deviceRepository.findAllById(deviceIds);
+        java.util.Map<Long, String> deviceIdToNameMap = devices.stream()
+                .collect(Collectors.toMap(Device::getId, Device::getName));
+        
+        // 构造返回结果
+        return countResults.stream()
+                .map(result -> {
+                    Long deviceId = (Long) result[0];
+                    Long pointCount = (Long) result[1];
+                    String deviceName = deviceIdToNameMap.getOrDefault(deviceId, "未知设备");
+                    return new DevicePointCountDto(deviceId, deviceName, pointCount);
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 根据发布状态统计每个设备内的点位数量
+     * @param published 是否发布
+     * @return 每个设备的点位数量统计结果
+     */
+    public List<DevicePointCountDto> getPointCountByDevice(Boolean published) {
+        // 获取每个设备的点位数量统计（按发布状态筛选）
+        List<Object[]> countResults = pointRepository.countPointsByDevice(published);
         
         // 获取所有相关的设备信息
         List<Long> deviceIds = countResults.stream()

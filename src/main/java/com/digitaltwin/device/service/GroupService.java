@@ -9,6 +9,7 @@ import com.digitaltwin.system.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import com.digitaltwin.system.util.SecurityContext;
 import com.digitaltwin.system.entity.User;
@@ -167,13 +168,12 @@ public class GroupService {
     }
     
     /**
-     * 分页查询分组内的点位列表，支持通过点位名称和设备名称搜索
-     *
+     * 根据分组ID和筛选条件获取点位列表（分页）
      * @param groupId 分组ID，当为-1时查询所有点位
-     * @param pointName 点位名称（可选）
-     * @param deviceName 设备名称（可选）
+     * @param pointName 点位名称（模糊匹配）
+     * @param deviceName 设备名称（模糊匹配）
      * @param pageable 分页参数
-     * @return 点位分页列表
+     * @return 分页的点位DTO列表
      */
     public Page<PointDto> getPointsByGroupWithFilters(Long groupId, String pointName, String deviceName, Pageable pageable) {
         Page<Point> points;
@@ -187,6 +187,42 @@ public class GroupService {
                     .orElseThrow(() -> new RuntimeException("分组不存在，ID: " + groupId));
             
             points = pointRepository.findPointsByGroupAndFilters(groupId, pointName, deviceName, pageable);
+        }
+        
+        return points.map(this::convertToDto);
+    }
+    
+    /**
+     * 根据分组ID获取点位列表并支持发布状态筛选
+     * 
+     * @param groupId 分组ID（-1表示所有分组）
+     * @param pointName 点位名称（可选，模糊匹配）
+     * @param deviceName 设备名称（可选，模糊匹配）
+     * @param published 是否发布（可选，用于筛选）
+     * @param pageable 分页参数
+     * @return 分页的点位DTO列表
+     */
+    public Page<PointDto> getPointsByGroupWithFilters(Long groupId, String pointName, String deviceName, Boolean published, Pageable pageable) {
+        Page<Point> points;
+        
+        // 当groupId为-1时，查询所有点位并根据published筛选
+        if (groupId == -1) {
+            points = pointRepository.findAllPointsByFiltersWithPublished(pointName, deviceName, published, pageable);
+        } else {
+            // 检查分组是否存在
+            groupRepository.findById(groupId)
+                    .orElseThrow(() -> new RuntimeException("分组不存在，ID: " + groupId));
+            
+            // 调用现有方法获取数据
+            points = pointRepository.findPointsByGroupAndFilters(groupId, pointName, deviceName, pageable);
+            
+            // 如果提供了published参数，则在内存中进行筛选
+            if (published != null) {
+                List<Point> filteredPoints = points.getContent().stream()
+                        .filter(point -> point.getPublished() == published)
+                        .collect(Collectors.toList());
+                points = new PageImpl<>(filteredPoints, pageable, filteredPoints.size());
+            }
         }
         
         return points.map(this::convertToDto);

@@ -36,6 +36,10 @@ public class Point {
     @Column(name = "is_default_display", nullable = false)
     private Boolean isDefaultDisplay = false;
     
+    // 是否已发布，默认为未发布(false)
+    @Column(name = "published", nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
+    private Boolean published = false;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_id", nullable = false)
     private Device device;

@@ -33,6 +33,17 @@ public interface PointRepository extends JpaRepository<Point, Long> {
         @Param("deviceName") String deviceName,
         Pageable pageable
     );
+    
+    @Query("SELECT p FROM Point p WHERE " +
+           "(:pointName IS NULL OR p.identity LIKE %:pointName%) " +
+           "AND (:deviceName IS NULL OR p.device.name LIKE %:deviceName%) " +
+           "AND (:published IS NULL OR p.published = :published)")
+    Page<Point> findAllPointsByFiltersWithPublished(
+        @Param("pointName") String pointName,
+        @Param("deviceName") String deviceName,
+        @Param("published") Boolean published,
+        Pageable pageable
+    );
 
     @Query("SELECT p FROM Point p WHERE p.identity = :identity AND p.device.id = :deviceId")
     Optional<Point> findByIdentityAndDeviceId(@Param("identity") String identity, @Param("deviceId") Long deviceId);
@@ -54,4 +65,12 @@ public interface PointRepository extends JpaRepository<Point, Long> {
      */
     @Query("SELECT p.device.id, COUNT(p) FROM Point p GROUP BY p.device.id")
     List<Object[]> countPointsByDevice();
+    
+    /**
+     * 根据发布状态统计每个设备内的点位数量
+     * @param published 是否发布
+     * @return 设备ID和点位数量的映射
+     */
+    @Query("SELECT p.device.id, COUNT(p) FROM Point p WHERE p.published = :published GROUP BY p.device.id")
+    List<Object[]> countPointsByDevice(@Param("published") Boolean published);
 }

@@ -8,6 +8,9 @@ import com.digitaltwin.device.entity.Group;
 import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.service.GroupService;
 import com.digitaltwin.system.dto.UserDto;
+import com.digitaltwin.device.repository.GroupRepository;
+import com.digitaltwin.device.repository.PointRepository;
+import com.digitaltwin.device.service.PointService;
 import com.digitaltwin.system.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
@@ -35,6 +38,9 @@ public class GroupController {
     
     private final GroupService groupService;
     private final UserService userService;
+    private final PointRepository pointRepository;
+    private final GroupRepository groupRepository;
+    private final PointService pointService;
     
     /**
      * 创建分组
@@ -241,6 +247,7 @@ public class GroupController {
             @PathVariable Long groupId,
             @RequestParam(required = false) String pointName,
             @RequestParam(required = false) String deviceName,
+            @RequestParam(required = false) Boolean published,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sort) {
@@ -249,10 +256,10 @@ public class GroupController {
             // 创建分页请求
             Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
             
-            // 调用服务层方法获取分页数据
-            Page<PointDto> points = groupService.getPointsByGroupWithFilters(groupId, pointName, deviceName, pageable);
+            // 直接调用GroupService中支持发布状态筛选的方法
+            Page<PointDto> pointDtos = groupService.getPointsByGroupWithFilters(groupId, pointName, deviceName, published, pageable);
             
-            return ResponseEntity.ok(ApiResponse.success("查询成功", points));
+            return ResponseEntity.ok(ApiResponse.success("查询成功", pointDtos));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("查询失败: " + e.getMessage()));
