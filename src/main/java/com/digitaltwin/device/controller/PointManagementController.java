@@ -7,6 +7,7 @@ import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.PointValueRequest;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
+import com.digitaltwin.device.dto.device.BatchUpdatePointsStatusRequest;
 import com.digitaltwin.device.service.PointService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -225,6 +226,21 @@ public class PointManagementController {
             return ResponseEntity.ok(ApiResponse.success("Point value set successfully", null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to set point value: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 批量更新点位的发布状态
+     * @param request 批量更新请求
+     * @return 更新结果
+     */
+    @PutMapping("/batch-status")
+    public ResponseEntity<ApiResponse> batchUpdatePointsStatus(@RequestBody BatchUpdatePointsStatusRequest request) {
+        try {
+            List<PointDto> updatedPoints = pointService.updatePointsPublishedStatus(request.getPointIds(), request.getPublished());
+            return ResponseEntity.ok(ApiResponse.success("Points published status updated successfully", updatedPoints));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to update points published status: " + e.getMessage()));
         }
     }
 

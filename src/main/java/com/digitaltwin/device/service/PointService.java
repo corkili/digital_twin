@@ -32,6 +32,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -691,5 +692,32 @@ public class PointService {
                     return new DevicePointCountDto(deviceId, deviceName, pointCount);
                 })
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 批量更新点位的发布状态
+     * @param pointIds 点位ID列表
+     * @param published 发布状态
+     * @return 更新后的点位DTO列表
+     */
+    @Transactional
+    public List<PointDto> updatePointsPublishedStatus(List<Long> pointIds, Boolean published) {
+        if (pointIds == null || pointIds.isEmpty()) {
+            throw new RuntimeException("Point IDs cannot be empty");
+        }
+        
+        // 获取当前用户
+        User currentUser = SecurityContext.getCurrentUser();
+        Long updatedById = currentUser != null ? currentUser.getId() : null;
+        
+        // 执行批量更新
+        int updatedCount = pointRepository.updatePointsPublishedStatus(pointIds, published, updatedById);
+        log.info("Updated published status for {} points", updatedCount);
+        
+        // 重新查询更新后的点位信息
+        List<Point> points = pointRepository.findAllById(pointIds);
+        
+        // 返回更新后的点位DTO列表
+        return convertPointsToDtos(points);
     }
 }

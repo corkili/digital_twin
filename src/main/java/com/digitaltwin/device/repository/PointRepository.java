@@ -4,6 +4,7 @@ import com.digitaltwin.device.entity.Point;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -73,4 +74,15 @@ public interface PointRepository extends JpaRepository<Point, Long> {
      */
     @Query("SELECT p.device.id, COUNT(p) FROM Point p WHERE p.published = :published GROUP BY p.device.id")
     List<Object[]> countPointsByDevice(@Param("published") Boolean published);
+    
+    /**
+     * 批量更新点位的发布状态
+     * @param pointIds 点位ID列表
+     * @param published 发布状态
+     * @param updatedById 更新人ID
+     * @return 更新的记录数
+     */
+    @Modifying
+    @Query("UPDATE Point p SET p.published = :published, p.updatedBy = :updatedById, p.updatedAt = CURRENT_TIMESTAMP WHERE p.id IN :pointIds")
+    int updatePointsPublishedStatus(@Param("pointIds") List<Long> pointIds, @Param("published") Boolean published, @Param("updatedById") Long updatedById);
 }
