@@ -33,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -618,7 +619,12 @@ public class PointService {
         try {
             OpcUaClient client = OpcUaClient.create(serverUrl);
             client.connect().get();
-            NodeId nodeId = new NodeId(1, identity);
+            NodeId nodeId;
+            if(StringUtils.hasText(request.getIdentity())){
+                nodeId = new NodeId(1, request.getIdentity());
+            }else {
+                nodeId = new NodeId(1, identity);
+            }
             // 2. 写入值
             DataValue value = new DataValue(new Variant(request.getValue()));
             StatusCode status = client.writeValue(nodeId, value).get();
