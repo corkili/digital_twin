@@ -5,6 +5,7 @@ import com.digitaltwin.trial.repository.TrialRepository;
 import com.digitaltwin.websocket.service.WebSocketPushService;
 import com.digitaltwin.websocket.model.WebSocketResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -35,14 +36,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TrialService {
 
     private final TrialRepository trialRepository;
     private final WebSocketPushService webSocketPushService;
     private final ExecutorService executorService = Executors.newFixedThreadPool(100);
-    private final TDengineService tdengineService;
+    private TDengineService tdengineService;
+
+    public TrialService(TrialRepository trialRepository, WebSocketPushService webSocketPushService, @Lazy TDengineService tdengineService) {
+        this.trialRepository = trialRepository;
+        this.webSocketPushService = webSocketPushService;
+        this.tdengineService = tdengineService;
+    }
 
     /**
      * 创建试验
