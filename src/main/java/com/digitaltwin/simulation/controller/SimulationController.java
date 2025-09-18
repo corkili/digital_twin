@@ -3,6 +3,7 @@ package com.digitaltwin.simulation.controller;
 import com.digitaltwin.simulation.dto.SimulationApiResponse;
 import com.digitaltwin.simulation.dto.SimulationExperimentListDto;
 import com.digitaltwin.simulation.dto.ExperimentStepsDto;
+import com.digitaltwin.simulation.dto.ExperimentStepsResponseDto;
 import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.service.SimulationService;
@@ -77,13 +78,39 @@ public class SimulationController {
     }
 
     /**
-     * 根据试验ID获取试验步骤
-     * 
+     * 根据试验ID获取试验步骤（包含手动和自动模式所有数据）
+     *
      * @param id 试验ID
-     * @return 试验步骤数据（包含步骤数组）
+     * @return 试验步骤数据，包含手动步骤、试验流程、应急流程，由前端选择展示
      */
+    @Operation(summary = "获取试验步骤", description = "获取试验的所有步骤数据，包含手动模式步骤和自动模式的试验流程、应急流程，前端根据选项决定展示哪个")
     @GetMapping("/{id}/steps")
-    public ResponseEntity<SimulationApiResponse<ExperimentStepsDto>> getExperimentSteps(
+    public ResponseEntity<SimulationApiResponse<ExperimentStepsResponseDto>> getExperimentSteps(
+            @Parameter(description = "试验ID") @PathVariable Long id) {
+        try {
+            Optional<ExperimentStepsResponseDto> steps = simulationService.getExperimentStepsV2(id);
+            if (steps.isPresent()) {
+                return ResponseEntity.ok(SimulationApiResponse.success("获取试验步骤成功", steps.get()));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(SimulationApiResponse.error("未找到ID为 " + id + " 的试验步骤"));
+            }
+        } catch (Exception e) {
+            log.error("获取试验步骤失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("获取试验步骤失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 根据试验ID获取试验步骤（原版本，向后兼容）
+     *
+     * @param id 试验ID
+     * @return 试验步骤数据（仅支持手动模式）
+     */
+    @Operation(summary = "获取试验步骤（兼容版本）", description = "获取手动模式的试验步骤，保持向后兼容")
+    @GetMapping("/{id}/steps/legacy")
+    public ResponseEntity<SimulationApiResponse<ExperimentStepsDto>> getExperimentStepsLegacy(
             @Parameter(description = "试验ID") @PathVariable Long id) {
         try {
             Optional<ExperimentStepsDto> steps = simulationService.getExperimentSteps(id);

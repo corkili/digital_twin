@@ -24,9 +24,17 @@ public class SimulationExperiment {
     @Column(length = 50)
     private String status = "ACTIVE";
 
-    // 步骤数据 - 存储完整的步骤JSON结构
+    // 手动模式步骤数据 - 存储完整的步骤JSON结构
     @Column(name = "steps_data", columnDefinition = "JSON")
     private String stepsData;
+
+    // 自动模式：试验流程数据
+    @Column(name = "experiment_flow", columnDefinition = "JSON")
+    private String experimentFlow;
+
+    // 自动模式：应急流程数据
+    @Column(name = "emergency_flow", columnDefinition = "JSON")
+    private String emergencyFlow;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;

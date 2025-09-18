@@ -5,6 +5,7 @@ import com.digitaltwin.simulation.dto.SimulationExperimentListDto;
 import com.digitaltwin.simulation.dto.SimulationStepNode;
 import com.digitaltwin.simulation.dto.ExperimentStepDto;
 import com.digitaltwin.simulation.dto.ExperimentStepsDto;
+import com.digitaltwin.simulation.dto.ExperimentStepsResponseDto;
 import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.dto.RoleDto;
@@ -99,9 +100,77 @@ public class SimulationService {
         }
     }
     
-    
+
     /**
-     * 根据ID获取试验步骤
+     * 根据ID获取试验步骤（新版本，同时返回手动模式和自动模式数据）
+     * @param id 试验ID
+     * @return 试验步骤统一响应数据
+     */
+    public Optional<ExperimentStepsResponseDto> getExperimentStepsV2(Long id) {
+        try {
+            Optional<SimulationExperiment> experiment = simulationRepository.findById(id);
+            if (!experiment.isPresent()) {
+                return Optional.empty();
+            }
+
+            SimulationExperiment exp = experiment.get();
+            ExperimentStepsResponseDto response = new ExperimentStepsResponseDto();
+            response.setExperimentName(exp.getName());
+
+            // 解析手动模式步骤数据
+            if (exp.getStepsData() != null) {
+                try {
+                    List<ExperimentStepDto> stepsList = objectMapper.readValue(
+                        exp.getStepsData(),
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, ExperimentStepDto.class)
+                    );
+
+                    ExperimentStepsDto manualSteps = new ExperimentStepsDto();
+                    manualSteps.setSteps(stepsList);
+                    manualSteps.setTotalSteps(stepsList.size());
+                    manualSteps.setExperimentName(exp.getName());
+                    response.setManualSteps(manualSteps);
+                } catch (Exception e) {
+                    log.warn("解析手动模式步骤数据失败: {}", e.getMessage());
+                }
+            }
+
+            // 解析自动模式试验流程
+            if (exp.getExperimentFlow() != null) {
+                try {
+                    List<SimulationStepNode> experimentFlow = objectMapper.readValue(
+                        exp.getExperimentFlow(),
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, SimulationStepNode.class)
+                    );
+                    response.setExperimentFlow(experimentFlow);
+                } catch (Exception e) {
+                    log.warn("解析试验流程数据失败: {}", e.getMessage());
+                }
+            }
+
+            // 解析自动模式应急流程
+            if (exp.getEmergencyFlow() != null) {
+                try {
+                    List<SimulationStepNode> emergencyFlow = objectMapper.readValue(
+                        exp.getEmergencyFlow(),
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, SimulationStepNode.class)
+                    );
+                    response.setEmergencyFlow(emergencyFlow);
+                } catch (Exception e) {
+                    log.warn("解析应急流程数据失败: {}", e.getMessage());
+                }
+            }
+
+            return Optional.of(response);
+
+        } catch (Exception e) {
+            log.error("根据ID获取试验步骤失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取试验步骤失败", e);
+        }
+    }
+
+    /**
+     * 根据ID获取试验步骤（原版本，保持向后兼容）
      * @param id 试验ID
      * @return 试验步骤数据（包含步骤数组）
      */
