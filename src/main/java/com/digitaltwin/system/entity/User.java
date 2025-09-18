@@ -34,7 +34,7 @@ public class User {
     private String auapUserId;
     
     @Column(name = "role", length = 50)
-    private String role = "普通用户"; // 默认角色为普通用户
+    private String role = "U"; // 默认角色为普通用户(U=普通用户, A=管理员, SA=超级管理员)
 
     @Column(name = "description", length = 500)
     private String description; // 用户描述

@@ -19,6 +19,9 @@ public class ComponentNode {
     @Schema(description = "组件名称", example = "主控制器", required = true)
     private String name;
     
+    @Schema(description = "对应的UE组件ID", example = "ue_component_001")
+    private String ue;
+    
     @Schema(description = "子组件列表，支持多层嵌套")
     private List<ComponentNode> children;
 }
