@@ -1,6 +1,5 @@
 package com.digitaltwin.websocket.service;
 
-import com.digitaltwin.trial.dto.TrailHistoryData;
 import com.digitaltwin.websocket.model.WebSocketResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,21 +66,6 @@ public class WebSocketPushService {
             
         } catch (Exception e) {
             log.error("推送消息到用户 {} 时发生错误: {}", username, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 推送历史回放数据到所有订阅了历史数据主题的客户端
-     * 
-     * @param response 要推送的响应数据
-     * @param <T> 响应数据的类型
-     */
-    public <T> void pushHistoryDataToSubscribers(WebSocketResponse<T> response) {
-        try {
-            messagingTemplate.convertAndSend("/topic/history_data", response);
-            log.debug("历史回放数据已推送到WebSocket主题: /topic/history_data");
-        } catch (Exception e) {
-            log.error("推送历史回放数据到WebSocket时发生错误: {}", e.getMessage(), e);
         }
     }
 }

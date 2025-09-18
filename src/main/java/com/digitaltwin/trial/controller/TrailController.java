@@ -121,55 +121,63 @@ public class TrailController {
                     })
                     .collect(Collectors.toList());
             
-            // 3. 调用TrialService处理数据查询和整合逻辑
-            List<TrailHistoryData> result = trialService.getTrailHistoryData(trial, points);
+            // 3. 遍历所有的Point，并使用TDengineService的querySensorDataByTimeRangeAndPointKey方法查询点位数据
+            Map<Long, Map<String, String>> dataMap = new HashMap<>();
+            
+            long now = System.currentTimeMillis();
+            long startTime = trial.getStartTimestamp();
+            long endTime = trial.getEndTimestamp() != null ? trial.getEndTimestamp() : now;
+            
+            try {
+                // 存储所有CompletableFuture的列表
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                
+                // 遍历所有的Point
+                for (Point point : points) {
+                    // 注意for循环变量逃逸问题，创建final变量
+                    final String pointIdentity = point.getIdentity();
+
+                    // 为每个点位的时间区间创建一个CompletableFuture
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                        List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
+                            startTime,
+                            endTime,
+                            pointIdentity
+                        );
+
+                        // 同步处理dataMap，注意并发安全问题
+                        synchronized (dataMap) {
+                            for (Map<String, Object> pointData : pointDataList) {
+                                java.sql.Timestamp ts = (java.sql.Timestamp) pointData.get("ts");
+                                Long timestamp = ts.getTime();
+                                String value = (String) pointData.get("point_value");
+
+                                dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(pointIdentity, value);
+                            }
+                        }
+                    }, executorService);
+
+                    futures.add(future);
+                }
+                
+                // 等待所有任务完成
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                
+            } catch (Exception e) {
+                log.error("查询点位数据时发生错误: {}", e.getMessage(), e);
+                return WebSocketResponse.error("查询点位数据时发生错误: " + e.getMessage());
+            }
+            
+            // 4. 整合数据：将所有数据整合到一个List<TrailHistoryData>中
+            List<TrailHistoryData> result = new ArrayList<>();
+            for (Map.Entry<Long, Map<String, String>> entry : dataMap.entrySet()) {
+                result.add(new TrailHistoryData(entry.getKey(), entry.getValue()));
+            }
+            
+            // 5. 按时间戳升序排列
+            result.sort((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()));
             
             return WebSocketResponse.success(result);
-        } catch (Exception e) {
-            log.error("获取试验历史数据失败: {}", e.getMessage(), e);
-            return WebSocketResponse.error("获取试验历史数据失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 根据试验ID查询所有点位数据
-     *
-     * @param id 试验ID
-     * @return 试验的所有点位数据
-     */
-    @Operation(summary = "根据试验ID查询所有点位数据")
-    @PostMapping("/{id}/history_data")
-    public WebSocketResponse<String> subscribeTrailHistoryDataById(
-            @Parameter(description = "试验ID") @PathVariable Long id) {
-        try {
-            // 1. 从数据库中查询出对应的Trial
-            Trial trial = trialService.getTrialById(id)
-                    .orElseThrow(() -> new RuntimeException("Trial not found with id: " + id));
-            
-            // 2. 从数据库中查询出所有的Point
-            List<Point> points = pointService.getAllPoints().stream()
-                    .map(dto -> {
-                        Point point = new Point();
-                        point.setId(dto.getId());
-                        point.setIdentity(dto.getIdentity());
-                        return point;
-                    })
-                    .collect(Collectors.toList());
-            
-            // 3. 生成唯一字符串：当前时间戳+trail.id
-            String uniqueId = System.currentTimeMillis() + "-" + trial.getId();
-            
-            // 4. 异步调用TrialService处理数据查询和整合逻辑
-            executorService.submit(() -> {
-                try {
-                    trialService.pushTrailHistoryData(trial, points, uniqueId);
-                } catch (Exception e) {
-                    log.error("异步处理试验历史数据失败: {}", e.getMessage(), e);
-                }
-            });
-            
-            // 5. 返回成功响应，包含唯一字符串
-            return WebSocketResponse.success(uniqueId);
         } catch (Exception e) {
             log.error("获取试验历史数据失败: {}", e.getMessage(), e);
             return WebSocketResponse.error("获取试验历史数据失败: " + e.getMessage());
