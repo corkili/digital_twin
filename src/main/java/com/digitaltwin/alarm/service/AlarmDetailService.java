@@ -155,7 +155,7 @@ public class AlarmDetailService {
         }
         try {
             LocalDateTime dateTime = LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(timestamp), java.time.ZoneId.systemDefault());
-            return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS"));
         } catch (Exception e) {
             log.warn("格式化时间戳失败: {}", e.getMessage());
             return null;

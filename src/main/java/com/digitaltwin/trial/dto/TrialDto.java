@@ -26,15 +26,15 @@ public class TrialDto {
         this.startTimestamp = startTimestamp;
         this.endTimestamp = endTimestamp;
         
-        // 格式化时间
-        if (startTimestamp != null) {
-            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(startTimestamp), ZoneId.systemDefault());
-            this.startTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        }
-        if (endTimestamp != null) {
-            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(endTimestamp), ZoneId.systemDefault());
-            this.endTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        }
+//        // 格式化时间
+//        if (startTimestamp != null) {
+//            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(startTimestamp), ZoneId.systemDefault());
+//            this.startTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+//        }
+//        if (endTimestamp != null) {
+//            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(endTimestamp), ZoneId.systemDefault());
+//            this.endTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+//        }
     }
 
     // Getters and Setters
@@ -77,10 +77,10 @@ public class TrialDto {
     public void setStartTimestamp(Long startTimestamp) {
         this.startTimestamp = startTimestamp;
         // 更新格式化时间
-        if (startTimestamp != null) {
-            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(startTimestamp), ZoneId.systemDefault());
-            this.startTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        }
+//        if (startTimestamp != null) {
+//            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(startTimestamp), ZoneId.systemDefault());
+//            this.startTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+//        }
     }
 
     public Long getEndTimestamp() {
@@ -90,10 +90,10 @@ public class TrialDto {
     public void setEndTimestamp(Long endTimestamp) {
         this.endTimestamp = endTimestamp;
         // 更新格式化时间
-        if (endTimestamp != null) {
-            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(endTimestamp), ZoneId.systemDefault());
-            this.endTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        }
+//        if (endTimestamp != null) {
+//            LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(endTimestamp), ZoneId.systemDefault());
+//            this.endTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+//        }
     }
 
     public String getStartTime() {

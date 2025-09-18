@@ -43,14 +43,14 @@ public class TrailListResponse {
             this.endTimestamp = trial.getEndTimestamp();
             
             // 格式化时间
-            if (trial.getStartTimestamp() != null) {
-                LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(trial.getStartTimestamp()), ZoneId.systemDefault());
-                this.startTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            }
-            if (trial.getEndTimestamp() != null) {
-                LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(trial.getEndTimestamp()), ZoneId.systemDefault());
-                this.endTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            }
+//            if (trial.getStartTimestamp() != null) {
+//                LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(trial.getStartTimestamp()), ZoneId.systemDefault());
+//                this.startTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+//            }
+//            if (trial.getEndTimestamp() != null) {
+//                LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(trial.getEndTimestamp()), ZoneId.systemDefault());
+//                this.endTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+//            }
         }
     }
 }
