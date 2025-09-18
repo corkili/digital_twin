@@ -616,7 +616,7 @@ public class PointService {
         String identity = point.getIdentity();
 
         try {
-            OpcUaClient client = OpcUaClient.create("opc.tcp://localhost:4334/UA/NodeJSServer");
+            OpcUaClient client = OpcUaClient.create(serverUrl);
             client.connect().get();
             NodeId nodeId = new NodeId(1, identity);
             // 2. 写入值
