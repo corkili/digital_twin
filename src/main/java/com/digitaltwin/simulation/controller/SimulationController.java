@@ -81,14 +81,16 @@ public class SimulationController {
      * 根据试验ID获取试验步骤（包含手动和自动模式所有数据）
      *
      * @param id 试验ID
+     * @param shuffle 是否乱序，可选参数，默认为false
      * @return 试验步骤数据，包含手动步骤、试验流程、应急流程，由前端选择展示
      */
     @Operation(summary = "获取试验步骤", description = "获取试验的所有步骤数据，包含手动模式步骤和自动模式的试验流程、应急流程，前端根据选项决定展示哪个")
     @GetMapping("/{id}/steps")
     public ResponseEntity<SimulationApiResponse<ExperimentStepsResponseDto>> getExperimentSteps(
-            @Parameter(description = "试验ID") @PathVariable Long id) {
+            @Parameter(description = "试验ID") @PathVariable Long id,
+            @Parameter(description = "是否乱序，默认为false") @RequestParam(value = "shuffle", required = false, defaultValue = "false") Boolean shuffle) {
         try {
-            Optional<ExperimentStepsResponseDto> steps = simulationService.getExperimentStepsV2(id);
+            Optional<ExperimentStepsResponseDto> steps = simulationService.getExperimentStepsV2(id, shuffle);
             if (steps.isPresent()) {
                 return ResponseEntity.ok(SimulationApiResponse.success("获取试验步骤成功", steps.get()));
             } else {
@@ -106,14 +108,16 @@ public class SimulationController {
      * 根据试验ID获取试验步骤（原版本，向后兼容）
      *
      * @param id 试验ID
+     * @param shuffle 是否乱序，可选参数，默认为false
      * @return 试验步骤数据（仅支持手动模式）
      */
     @Operation(summary = "获取试验步骤（兼容版本）", description = "获取手动模式的试验步骤，保持向后兼容")
     @GetMapping("/{id}/steps/legacy")
     public ResponseEntity<SimulationApiResponse<ExperimentStepsDto>> getExperimentStepsLegacy(
-            @Parameter(description = "试验ID") @PathVariable Long id) {
+            @Parameter(description = "试验ID") @PathVariable Long id,
+            @Parameter(description = "是否乱序，默认为false") @RequestParam(value = "shuffle", required = false, defaultValue = "false") Boolean shuffle) {
         try {
-            Optional<ExperimentStepsDto> steps = simulationService.getExperimentSteps(id);
+            Optional<ExperimentStepsDto> steps = simulationService.getExperimentSteps(id, shuffle);
             if (steps.isPresent()) {
                 return ResponseEntity.ok(SimulationApiResponse.success("获取试验步骤成功", steps.get()));
             } else {

@@ -14,6 +14,7 @@ import com.digitaltwin.simulation.entity.UserExperimentRecord;
 import com.digitaltwin.simulation.repository.SimulationRepository;
 import com.digitaltwin.simulation.repository.UserExperimentRecordRepository;
 import com.digitaltwin.simulation.service.ExamService;
+import com.digitaltwin.simulation.utils.ShuffleUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -104,9 +105,10 @@ public class SimulationService {
     /**
      * 根据ID获取试验步骤（新版本，同时返回手动模式和自动模式数据）
      * @param id 试验ID
+     * @param shuffle 是否乱序，可选参数，默认为false
      * @return 试验步骤统一响应数据
      */
-    public Optional<ExperimentStepsResponseDto> getExperimentStepsV2(Long id) {
+    public Optional<ExperimentStepsResponseDto> getExperimentStepsV2(Long id, Boolean shuffle) {
         try {
             Optional<SimulationExperiment> experiment = simulationRepository.findById(id);
             if (!experiment.isPresent()) {
@@ -161,6 +163,11 @@ public class SimulationService {
                 }
             }
 
+            // 如果需要乱序，则对响应数据进行乱序处理
+            if (shuffle != null && shuffle) {
+                response = ShuffleUtils.shuffleExperimentStepsResponse(response);
+            }
+
             return Optional.of(response);
 
         } catch (Exception e) {
@@ -172,9 +179,10 @@ public class SimulationService {
     /**
      * 根据ID获取试验步骤（原版本，保持向后兼容）
      * @param id 试验ID
+     * @param shuffle 是否乱序，可选参数，默认为false
      * @return 试验步骤数据（包含步骤数组）
      */
-    public Optional<ExperimentStepsDto> getExperimentSteps(Long id) {
+    public Optional<ExperimentStepsDto> getExperimentSteps(Long id, Boolean shuffle) {
         try {
             Optional<SimulationExperiment> experiment = simulationRepository.findById(id);
             if (experiment.isPresent() && experiment.get().getStepsData() != null) {
@@ -190,7 +198,12 @@ public class SimulationService {
                 result.setSteps(stepsList);
                 result.setTotalSteps(stepsList.size());
                 result.setExperimentName(experiment.get().getName());
-                
+
+                // 如果需要乱序，则对结果进行乱序处理
+                if (shuffle != null && shuffle) {
+                    result = ShuffleUtils.shuffleExperimentSteps(result);
+                }
+
                 return Optional.of(result);
             }
             return Optional.empty();
@@ -253,8 +266,8 @@ public class SimulationService {
      */
     private Integer calculateScore(Long targetExperimentId, List<ExperimentStepDto> userSubmission) {
         try {
-            // 获取标准答案
-            Optional<ExperimentStepsDto> standardAnswerOpt = getExperimentSteps(targetExperimentId);
+            // 获取标准答案（不乱序）
+            Optional<ExperimentStepsDto> standardAnswerOpt = getExperimentSteps(targetExperimentId, false);
             if (!standardAnswerOpt.isPresent()) {
                 log.warn("未找到试验ID {} 的标准答案", targetExperimentId);
                 return 0;
