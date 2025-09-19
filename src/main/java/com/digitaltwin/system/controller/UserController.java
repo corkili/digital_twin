@@ -93,6 +93,28 @@ public class UserController {
     }
 
     /**
+     * 批量删除用户 - 仅超级管理员可操作
+     */
+    @Operation(summary = "批量删除用户", description = "批量删除指定的用户列表，仅超级管理员(SA)可操作")
+    @DeleteMapping("/batch")
+    public ResponseEntity<ApiResponse> batchDeleteUsers(
+            @Parameter(description = "用户ID列表", required = true) @RequestBody List<Long> userIds) {
+        try {
+            // 验证权限：只有超级管理员才能删除用户
+            RoleUtil.requireSuperAdmin();
+
+            if (userIds == null || userIds.isEmpty()) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("用户ID列表不能为空"));
+            }
+
+            userService.batchDelete(userIds);
+            return ResponseEntity.ok(ApiResponse.success("批量删除用户成功", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    /**
      * 用户登录 - 本地密码验证
      */
     @Operation(summary = "用户登录", description = "用户名密码登录，返回JWT令牌")

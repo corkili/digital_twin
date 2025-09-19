@@ -90,6 +90,21 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
+    public void batchDelete(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            throw new RuntimeException("用户ID列表不能为空");
+        }
+
+        // 检查所有用户ID是否存在
+        List<User> existingUsers = userRepository.findAllById(userIds);
+        if (existingUsers.size() != userIds.size()) {
+            throw new RuntimeException("部分用户ID不存在，无法执行批量删除");
+        }
+
+        // 执行批量删除
+        userRepository.deleteAllById(userIds);
+    }
+
     public Optional<User> findUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }
