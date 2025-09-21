@@ -11,6 +11,7 @@ import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.dto.RoleDto;
 import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
 import com.digitaltwin.simulation.dto.ExperimentComponentDto;
+import com.digitaltwin.simulation.enums.RoleType;
 import com.digitaltwin.simulation.entity.SimulationExperiment;
 import com.digitaltwin.simulation.entity.UserExperimentRecord;
 import com.digitaltwin.simulation.entity.EmergencyProcedure;
@@ -114,9 +115,10 @@ public class SimulationService {
      * 根据ID获取试验步骤（新版本，同时返回手动模式和自动模式数据）
      * @param id 试验ID
      * @param shuffle 是否乱序，可选参数，默认为false
+     * @param roleType 角色类型过滤，可选参数，为null时返回全量数据
      * @return 试验步骤统一响应数据
      */
-    public Optional<ExperimentStepsResponseDto> getExperimentStepsV2(Long id, Boolean shuffle) {
+    public Optional<ExperimentStepsResponseDto> getExperimentStepsV2(Long id, Boolean shuffle, RoleType roleType) {
         try {
             Optional<SimulationExperiment> experiment = simulationRepository.findById(id);
             if (!experiment.isPresent()) {
@@ -134,6 +136,11 @@ public class SimulationService {
                         exp.getStepsData(),
                         objectMapper.getTypeFactory().constructCollectionType(List.class, ExperimentStepDto.class)
                     );
+
+                    // 如果指定了角色过滤，则进行过滤
+                    if (roleType != null) {
+                        stepsList = filterStepsByRole(stepsList, roleType);
+                    }
 
                     ExperimentStepsDto manualSteps = new ExperimentStepsDto();
                     manualSteps.setSteps(stepsList);
@@ -156,6 +163,16 @@ public class SimulationService {
             log.error("根据ID获取试验步骤失败: {}", e.getMessage(), e);
             throw new RuntimeException("获取试验步骤失败", e);
         }
+    }
+
+    /**
+     * 根据ID获取试验步骤（向后兼容版本，不带角色过滤）
+     * @param id 试验ID
+     * @param shuffle 是否乱序，可选参数，默认为false
+     * @return 试验步骤统一响应数据
+     */
+    public Optional<ExperimentStepsResponseDto> getExperimentStepsV2(Long id, Boolean shuffle) {
+        return getExperimentStepsV2(id, shuffle, null);
     }
 
     /**
@@ -432,5 +449,42 @@ public class SimulationService {
             log.error("根据ID获取试验组件详情失败: {}", e.getMessage(), e);
             throw new RuntimeException("获取试验组件详情失败", e);
         }
+    }
+
+    /**
+     * 根据角色类型过滤试验步骤
+     * @param originalSteps 原始步骤列表
+     * @param roleType 角色类型
+     * @return 过滤后的步骤列表
+     */
+    private List<ExperimentStepDto> filterStepsByRole(List<ExperimentStepDto> originalSteps, RoleType roleType) {
+        if (originalSteps == null || originalSteps.isEmpty() || roleType == null) {
+            return originalSteps;
+        }
+
+        List<ExperimentStepDto> filteredSteps = new ArrayList<>();
+        String targetRoleId = roleType.getDisplayName();
+
+        for (ExperimentStepDto step : originalSteps) {
+            if (step.getRoles() == null || step.getRoles().isEmpty()) {
+                continue;
+            }
+
+            // 过滤出匹配角色的角色列表（使用roleId进行匹配）
+            List<RoleDto> filteredRoles = step.getRoles().stream()
+                    .filter(role -> targetRoleId.equals(role.getRoleId()))
+                    .collect(Collectors.toList());
+
+            // 如果该步骤包含目标角色，则添加到结果中
+            if (!filteredRoles.isEmpty()) {
+                ExperimentStepDto filteredStep = new ExperimentStepDto();
+                filteredStep.setStepId(step.getStepId());
+                filteredStep.setStepName(step.getStepName());
+                filteredStep.setRoles(filteredRoles);
+                filteredSteps.add(filteredStep);
+            }
+        }
+
+        return filteredSteps;
     }
 }

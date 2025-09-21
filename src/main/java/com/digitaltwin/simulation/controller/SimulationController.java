@@ -8,6 +8,7 @@ import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
 import com.digitaltwin.simulation.dto.ExperimentComponentDto;
+import com.digitaltwin.simulation.enums.RoleType;
 import com.digitaltwin.simulation.service.SimulationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -84,15 +85,25 @@ public class SimulationController {
      *
      * @param id 试验ID
      * @param shuffle 是否乱序，可选参数，默认为false
+     * @param role 角色类型过滤，可选参数，支持"data_operator"和"commander"，为空时返回全量数据
      * @return 试验步骤数据，包含手动步骤
      */
-    @Operation(summary = "获取试验步骤", description = "获取试验的步骤数据，包含手动模式步骤")
+    @Operation(summary = "获取试验步骤", description = "获取试验的步骤数据，包含手动模式步骤，支持按角色类型过滤")
     @GetMapping("/{id}/steps")
     public ResponseEntity<SimulationApiResponse<ExperimentStepsResponseDto>> getExperimentSteps(
             @Parameter(description = "试验ID") @PathVariable Long id,
-            @Parameter(description = "是否乱序，默认为false") @RequestParam(value = "shuffle", required = false, defaultValue = "false") Boolean shuffle) {
+            @Parameter(description = "是否乱序，默认为false") @RequestParam(value = "shuffle", required = false, defaultValue = "false") Boolean shuffle,
+            @Parameter(description = "角色类型过滤，支持'data_operator'和'commander'，为空时返回全量数据") @RequestParam(value = "role", required = false) String role) {
         try {
-            Optional<ExperimentStepsResponseDto> steps = simulationService.getExperimentStepsV2(id, shuffle);
+            RoleType roleType = null;
+            if (role != null && !role.trim().isEmpty()) {
+                roleType = RoleType.fromDisplayName(role.trim());
+                if (roleType == null) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(SimulationApiResponse.error("不支持的角色类型: " + role + "，支持的角色类型: data_operator, commander"));
+                }
+            }
+            Optional<ExperimentStepsResponseDto> steps = simulationService.getExperimentStepsV2(id, shuffle, roleType);
             if (steps.isPresent()) {
                 return ResponseEntity.ok(SimulationApiResponse.success("获取试验步骤成功", steps.get()));
             } else {
