@@ -77,7 +77,7 @@ public class ChannelManagementController {
     public ResponseEntity<ApiResponse> getAllChannels(Pageable pageable) {
         try {
             // 检查是否提供了分页参数（page、size）
-            boolean hasPagination = pageable.getPageNumber() > 0 || pageable.getPageSize() < Integer.MAX_VALUE;
+            boolean hasPagination = pageable.isPaged();
             
             if (hasPagination) {
                 // 使用分页查询

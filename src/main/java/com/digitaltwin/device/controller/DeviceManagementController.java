@@ -84,7 +84,7 @@ public class DeviceManagementController {
     public ResponseEntity<ApiResponse> getAllDevices(Pageable pageable) {
         try {
             // 判断是否提供了分页参数（page和size）
-            boolean hasPaginationParams = pageable.isPaged() && pageable.getPageNumber() >= 0 && pageable.getPageSize() > 0;
+            boolean hasPaginationParams = pageable.isPaged();
             
             if (hasPaginationParams) {
                 // 使用分页查询
