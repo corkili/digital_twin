@@ -139,15 +139,15 @@ public class DeviceManagementController {
     /**
      * 删除Device
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteDevice(@PathVariable Long id) {
+    @DeleteMapping("/{ids}")
+    public ResponseEntity<ApiResponse> deleteDevices(@PathVariable List<Long> ids) {
         try {
-            deviceService.deleteDevice(id);
-            return ResponseEntity.ok(ApiResponse.success("删除成功"));
+            deviceService.deleteDevices(ids);
+            return ResponseEntity.ok(ApiResponse.success("批量删除成功"));
         } catch (Exception e) {
-            log.error("删除Device失败: {}", e.getMessage(), e);
+            log.error("批量删除Device失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("删除Device失败: " + e.getMessage()));
+                    .body(ApiResponse.error("批量删除Device失败: " + e.getMessage()));
         }
     }
     

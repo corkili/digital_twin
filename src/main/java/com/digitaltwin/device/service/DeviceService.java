@@ -177,9 +177,9 @@ public class DeviceService {
     public void deleteDevice(Long id) {
         Device device = deviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Device不存在，ID: " + id));
-        
+
         deviceRepository.deleteById(id);
-        
+
         // 记录操作日志
         deviceOperationLogService.logDeviceOperation(
                 id, 
@@ -187,8 +187,33 @@ public class DeviceService {
                 "DELETE", 
                 "删除设备: " + device.getName()
         );
-        
+
         log.info("删除Device成功，ID: {}", id);
+    }
+
+    /**
+     * 批量删除Device
+     * @param ids Device ID列表
+     */
+    public void deleteDevices(List<Long> ids) {
+        // 验证所有设备是否存在
+        List<Device> devices = deviceRepository.findByIds(ids);
+        if (devices.size() != ids.size()) {
+            throw new RuntimeException("部分设备不存在");
+        }
+        
+        deviceRepository.deleteAllById(ids);
+        
+        // 记录操作日志
+        for (Device device : devices) {
+            deviceOperationLogService.logDeviceOperation(
+                    device.getId(),
+                    device.getName(),
+                    "DELETE",
+                    "删除设备: " + device.getName()
+            );
+            log.info("删除Device成功，ID: {}", device.getId());
+        }
     }
     
     /**
