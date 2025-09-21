@@ -6,6 +6,8 @@ import com.digitaltwin.simulation.dto.ExperimentStepsDto;
 import com.digitaltwin.simulation.dto.ExperimentStepsResponseDto;
 import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
+import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
+import com.digitaltwin.simulation.dto.ExperimentComponentDto;
 import com.digitaltwin.simulation.service.SimulationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -78,13 +80,13 @@ public class SimulationController {
     }
 
     /**
-     * 根据试验ID获取试验步骤（包含手动和自动模式所有数据）
+     * 根据试验ID获取试验步骤
      *
      * @param id 试验ID
      * @param shuffle 是否乱序，可选参数，默认为false
-     * @return 试验步骤数据，包含手动步骤、试验流程、应急流程，由前端选择展示
+     * @return 试验步骤数据，包含手动步骤
      */
-    @Operation(summary = "获取试验步骤", description = "获取试验的所有步骤数据，包含手动模式步骤和自动模式的试验流程、应急流程，前端根据选项决定展示哪个")
+    @Operation(summary = "获取试验步骤", description = "获取试验的步骤数据，包含手动模式步骤")
     @GetMapping("/{id}/steps")
     public ResponseEntity<SimulationApiResponse<ExperimentStepsResponseDto>> getExperimentSteps(
             @Parameter(description = "试验ID") @PathVariable Long id,
@@ -104,36 +106,10 @@ public class SimulationController {
         }
     }
 
-    /**
-     * 根据试验ID获取试验步骤（原版本，向后兼容）
-     *
-     * @param id 试验ID
-     * @param shuffle 是否乱序，可选参数，默认为false
-     * @return 试验步骤数据（仅支持手动模式）
-     */
-    @Operation(summary = "获取试验步骤（兼容版本）", description = "获取手动模式的试验步骤，保持向后兼容")
-    @GetMapping("/{id}/steps/legacy")
-    public ResponseEntity<SimulationApiResponse<ExperimentStepsDto>> getExperimentStepsLegacy(
-            @Parameter(description = "试验ID") @PathVariable Long id,
-            @Parameter(description = "是否乱序，默认为false") @RequestParam(value = "shuffle", required = false, defaultValue = "false") Boolean shuffle) {
-        try {
-            Optional<ExperimentStepsDto> steps = simulationService.getExperimentSteps(id, shuffle);
-            if (steps.isPresent()) {
-                return ResponseEntity.ok(SimulationApiResponse.success("获取试验步骤成功", steps.get()));
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(SimulationApiResponse.error("未找到ID为 " + id + " 的试验步骤"));
-            }
-        } catch (Exception e) {
-            log.error("获取试验步骤失败: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(SimulationApiResponse.error("获取试验步骤失败: " + e.getMessage()));
-        }
-    }
     
     /**
      * 提交试验步骤
-     * 
+     *
      * @param request 提交请求，包含用户ID、试验ID和步骤数据
      * @return 提交结果
      */
@@ -149,6 +125,74 @@ public class SimulationController {
             log.error("提交试验步骤失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(SimulationApiResponse.error("提交试验步骤失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 获取所有应急流程列表
+     *
+     * @return 应急流程列表
+     */
+    @Operation(summary = "获取应急流程列表", description = "获取所有可用的应急流程信息")
+    @GetMapping("/emergency-procedures")
+    public ResponseEntity<SimulationApiResponse<List<EmergencyProcedureDto>>> getAllEmergencyProcedures() {
+        try {
+            List<EmergencyProcedureDto> procedures = simulationService.getAllEmergencyProcedures();
+            return ResponseEntity.ok(SimulationApiResponse.success("获取应急流程列表成功", procedures));
+        } catch (Exception e) {
+            log.error("获取应急流程列表失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("获取应急流程列表失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 根据ID获取应急流程详情
+     *
+     * @param id 应急流程ID
+     * @return 应急流程详情
+     */
+    @Operation(summary = "获取应急流程详情", description = "根据ID获取特定应急流程的详细信息")
+    @GetMapping("/emergency-procedures/{id}")
+    public ResponseEntity<SimulationApiResponse<EmergencyProcedureDto>> getEmergencyProcedureById(
+            @Parameter(description = "应急流程ID") @PathVariable Long id) {
+        try {
+            Optional<EmergencyProcedureDto> procedure = simulationService.getEmergencyProcedureById(id);
+            if (procedure.isPresent()) {
+                return ResponseEntity.ok(SimulationApiResponse.success("获取应急流程详情成功", procedure.get()));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(SimulationApiResponse.error("未找到ID为 " + id + " 的应急流程"));
+            }
+        } catch (Exception e) {
+            log.error("获取应急流程详情失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("获取应急流程详情失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 根据ID获取试验组件列表
+     *
+     * @param id 试验组件ID
+     * @return 试验组件列表数据
+     */
+    @Operation(summary = "获取试验组件列表", description = "根据ID获取特定试验组件的列表数据")
+    @GetMapping("/components/{id}")
+    public ResponseEntity<SimulationApiResponse<ExperimentComponentDto>> getExperimentComponentById(
+            @Parameter(description = "试验组件ID") @PathVariable Long id) {
+        try {
+            Optional<ExperimentComponentDto> component = simulationService.getExperimentComponentById(id);
+            if (component.isPresent()) {
+                return ResponseEntity.ok(SimulationApiResponse.success("获取试验组件列表成功", component.get()));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(SimulationApiResponse.error("未找到ID为 " + id + " 的试验组件"));
+            }
+        } catch (Exception e) {
+            log.error("获取试验组件列表失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("获取试验组件列表失败: " + e.getMessage()));
         }
     }
 }

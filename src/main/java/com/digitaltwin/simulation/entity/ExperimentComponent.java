@@ -8,9 +8,9 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "simulation_experiment")
+@Table(name = "experiment_component")
 @ToString
-public class SimulationExperiment {
+public class ExperimentComponent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,16 +21,15 @@ public class SimulationExperiment {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "component_list", columnDefinition = "JSON")
+    private String componentList;
+
     @Column(length = 50)
     private String status = "ACTIVE";
 
-    // 手动模式步骤数据 - 存储完整的步骤JSON结构
-    @Column(name = "steps_data", columnDefinition = "JSON")
-    private String stepsData;
-    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-    
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

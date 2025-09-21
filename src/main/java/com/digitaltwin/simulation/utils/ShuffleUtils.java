@@ -35,16 +35,6 @@ public class ShuffleUtils {
             shuffledResponse.setManualSteps(shuffleExperimentSteps(response.getManualSteps()));
         }
 
-        // 乱序试验流程
-        if (response.getExperimentFlow() != null) {
-            shuffledResponse.setExperimentFlow(shuffleSimulationStepNodeList(response.getExperimentFlow()));
-        }
-
-        // 乱序应急流程
-        if (response.getEmergencyFlow() != null) {
-            shuffledResponse.setEmergencyFlow(shuffleSimulationStepNodeList(response.getEmergencyFlow()));
-        }
-
         return shuffledResponse;
     }
 

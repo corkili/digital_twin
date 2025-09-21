@@ -9,10 +9,16 @@ import com.digitaltwin.simulation.dto.ExperimentStepsResponseDto;
 import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.dto.RoleDto;
+import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
+import com.digitaltwin.simulation.dto.ExperimentComponentDto;
 import com.digitaltwin.simulation.entity.SimulationExperiment;
 import com.digitaltwin.simulation.entity.UserExperimentRecord;
+import com.digitaltwin.simulation.entity.EmergencyProcedure;
+import com.digitaltwin.simulation.entity.ExperimentComponent;
 import com.digitaltwin.simulation.repository.SimulationRepository;
 import com.digitaltwin.simulation.repository.UserExperimentRecordRepository;
+import com.digitaltwin.simulation.repository.EmergencyProcedureRepository;
+import com.digitaltwin.simulation.repository.ExperimentComponentRepository;
 import com.digitaltwin.simulation.service.ExamService;
 import com.digitaltwin.simulation.utils.ShuffleUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +41,8 @@ public class SimulationService {
     
     private final SimulationRepository simulationRepository;
     private final UserExperimentRecordRepository userExperimentRecordRepository;
+    private final EmergencyProcedureRepository emergencyProcedureRepository;
+    private final ExperimentComponentRepository experimentComponentRepository;
     private final ExamService examService;
     private final ObjectMapper objectMapper;
     
@@ -134,32 +142,6 @@ public class SimulationService {
                     response.setManualSteps(manualSteps);
                 } catch (Exception e) {
                     log.warn("解析手动模式步骤数据失败: {}", e.getMessage());
-                }
-            }
-
-            // 解析自动模式试验流程
-            if (exp.getExperimentFlow() != null) {
-                try {
-                    List<SimulationStepNode> experimentFlow = objectMapper.readValue(
-                        exp.getExperimentFlow(),
-                        objectMapper.getTypeFactory().constructCollectionType(List.class, SimulationStepNode.class)
-                    );
-                    response.setExperimentFlow(experimentFlow);
-                } catch (Exception e) {
-                    log.warn("解析试验流程数据失败: {}", e.getMessage());
-                }
-            }
-
-            // 解析自动模式应急流程
-            if (exp.getEmergencyFlow() != null) {
-                try {
-                    List<SimulationStepNode> emergencyFlow = objectMapper.readValue(
-                        exp.getEmergencyFlow(),
-                        objectMapper.getTypeFactory().constructCollectionType(List.class, SimulationStepNode.class)
-                    );
-                    response.setEmergencyFlow(emergencyFlow);
-                } catch (Exception e) {
-                    log.warn("解析应急流程数据失败: {}", e.getMessage());
                 }
             }
 
@@ -403,6 +385,52 @@ public class SimulationService {
             log.error("自动创建Exam记录失败: userId={}, error={}", 
                     request.getUserId(), e.getMessage(), e);
             throw e;
+        }
+    }
+
+    /**
+     * 获取所有应急流程
+     * @return 应急流程列表
+     */
+    public List<EmergencyProcedureDto> getAllEmergencyProcedures() {
+        try {
+            List<EmergencyProcedure> procedures = emergencyProcedureRepository.findByStatus("ACTIVE");
+            return procedures.stream()
+                    .map(EmergencyProcedureDto::fromEntity)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("获取应急流程列表失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取应急流程列表失败", e);
+        }
+    }
+
+    /**
+     * 根据ID获取应急流程详情
+     * @param id 应急流程ID
+     * @return 应急流程详情
+     */
+    public Optional<EmergencyProcedureDto> getEmergencyProcedureById(Long id) {
+        try {
+            Optional<EmergencyProcedure> procedure = emergencyProcedureRepository.findById(id);
+            return procedure.map(EmergencyProcedureDto::fromEntity);
+        } catch (Exception e) {
+            log.error("根据ID获取应急流程详情失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取应急流程详情失败", e);
+        }
+    }
+
+    /**
+     * 根据ID获取试验组件详情
+     * @param id 试验组件ID
+     * @return 试验组件详情
+     */
+    public Optional<ExperimentComponentDto> getExperimentComponentById(Long id) {
+        try {
+            Optional<ExperimentComponent> component = experimentComponentRepository.findById(id);
+            return component.map(ExperimentComponentDto::fromEntity);
+        } catch (Exception e) {
+            log.error("根据ID获取试验组件详情失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取试验组件详情失败", e);
         }
     }
 }
