@@ -2,6 +2,8 @@ package com.digitaltwin.trial.service;
 
 import com.digitaltwin.trial.entity.Trial;
 import com.digitaltwin.trial.repository.TrialRepository;
+import com.digitaltwin.trial.service.TrailHistoryCacheService;
+import com.digitaltwin.trial.service.TrailHistoryPusher;
 import com.digitaltwin.websocket.service.WebSocketPushService;
 import com.digitaltwin.websocket.model.WebSocketResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.digitaltwin.trial.dto.TrailHistoryData;
 import com.digitaltwin.device.entity.Point;
@@ -41,12 +44,15 @@ public class TrialService {
 
     private final TrialRepository trialRepository;
     private final WebSocketPushService webSocketPushService;
+    private final TrailHistoryCacheService trailHistoryCacheService;
     private final ExecutorService executorService = Executors.newFixedThreadPool(100);
     private TDengineService tdengineService;
+    private final Map<String, TrailHistoryPusher> pusherMap = new ConcurrentHashMap<>();
 
-    public TrialService(TrialRepository trialRepository, WebSocketPushService webSocketPushService, @Lazy TDengineService tdengineService) {
+    public TrialService(TrialRepository trialRepository, WebSocketPushService webSocketPushService, TrailHistoryCacheService trailHistoryCacheService, @Lazy TDengineService tdengineService) {
         this.trialRepository = trialRepository;
         this.webSocketPushService = webSocketPushService;
+        this.trailHistoryCacheService = trailHistoryCacheService;
         this.tdengineService = tdengineService;
     }
 
@@ -185,154 +191,119 @@ public class TrialService {
     }
 
     public void pushTrailHistoryData(Trial trial, List<Point> points, String uniqueId) {
-        // 遍历所有的Point，并使用TDengineService的querySensorDataByTimeRangeAndPointKey方法查询点位数据
-        Map<Long, Map<String, String>> dataMap = new HashMap<>();
+        // 创建一个新的TrailHistoryPusher对象
+        TrailHistoryPusher pusher = new TrailHistoryPusher(
+            uniqueId, 
+            trial, 
+            points, 
+            trailHistoryCacheService, 
+            webSocketPushService, 
+            tdengineService, 
+            executorService
+        );
         
-        long now = System.currentTimeMillis();
-        long startTime = trial.getStartTimestamp();
-        long endTime = trial.getEndTimestamp() != null ? trial.getEndTimestamp() : now;
+        // 将uniqueId到pusher对象的映射存到map中
+        pusherMap.put(uniqueId, pusher);
         
         try {
-            // 存储所有CompletableFuture的列表
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-            
-            // 遍历所有的Point
-            for (Point point : points) {
-                // 注意for循环变量逃逸问题，创建final变量
-                final String pointIdentity = point.getIdentity();
-
-                // 为每个点位的时间区间创建一个CompletableFuture
-                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
-                        startTime,
-                        endTime,
-                        pointIdentity
-                    );
-
-                    // 同步处理dataMap，注意并发安全问题
-                    synchronized (dataMap) {
-                        for (Map<String, Object> pointData : pointDataList) {
-                            Timestamp ts = (Timestamp) pointData.get("ts");
-                            Long timestamp = ts.getTime();
-                            String value = (String) pointData.get("point_value");
-
-                            dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(pointIdentity, value);
-                        }
-                    }
-                }, executorService);
-
-                futures.add(future);
-            }
-            
-            // 等待所有任务完成
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            
-        } catch (Exception e) {
-            log.error("查询点位数据时发生错误: {}", e.getMessage(), e);
-            throw new RuntimeException("查询点位数据时发生错误: " + e.getMessage(), e);
+            // 调用pusher的push方法
+            pusher.push();
+        } finally {
+            // 推送完成后，从map中删除映射
+            pusherMap.remove(uniqueId);
         }
-        
-        // 整合数据：将所有数据整合到一个List<TrailHistoryData>中
-        List<TrailHistoryData> result = new ArrayList<>();
-        for (Map.Entry<Long, Map<String, String>> entry : dataMap.entrySet()) {
-            result.add(new TrailHistoryData(entry.getKey(), entry.getValue(), uniqueId));
+    }
+    
+    /**
+     * 设置推送速率
+     *
+     * @param uniqueId 唯一标识符
+     * @param rate 推送速率
+     */
+    public void setPushRate(String uniqueId, double rate) {
+        TrailHistoryPusher pusher = pusherMap.get(uniqueId);
+        if (pusher != null) {
+            pusher.setRate(rate);
+        } else {
+            throw new IllegalArgumentException("未找到对应的推送器: " + uniqueId);
         }
-        
-        // 按时间戳升序排列
-        result.sort((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()));
-        
-        // 通过WebSocket推送历史数据
-        try {
-            // 逐条推送数据，每条数据间隔N毫秒，N为下一条数据的时间戳减去当前数据的时间戳
-            for (int i = 0; i < result.size(); i++) {
-                TrailHistoryData currentData = result.get(i);
-                
-                // 推送当前数据
-                webSocketPushService.pushHistoryDataToSubscribers(WebSocketResponse.success(currentData));
-                
-                // 如果不是最后一条数据，计算间隔时间并等待
-                if (i < result.size() - 1) {
-                    TrailHistoryData nextData = result.get(i + 1);
-                    long interval = nextData.getTimestamp() - currentData.getTimestamp();
-                    
-                    // 确保间隔时间不为负数
-                    if (interval > 0) {
-                        Thread.sleep(interval);
-                    }
-                }
-            }
-            
-            // 推送完成标志：发送timestamp为-1的数据
-            TrailHistoryData completionData = new TrailHistoryData();
-            completionData.setTimestamp(-1L);
-            completionData.setSubscribeId(uniqueId);
-            webSocketPushService.pushHistoryDataToSubscribers(WebSocketResponse.success(completionData));
-        } catch (InterruptedException e) {
-            log.error("推送历史数据时被中断: {}", e.getMessage(), e);
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            log.error("推送历史数据时发生错误: {}", e.getMessage(), e);
-        }
-        
-
+    }
+    
+    /**
+     * 获取推送器
+     *
+     * @param uniqueId 唯一标识符
+     * @return 推送器对象
+     */
+    public TrailHistoryPusher getPusher(String uniqueId) {
+        return pusherMap.get(uniqueId);
     }
 
     public List<TrailHistoryData> getTrailHistoryData(Trial trial, List<Point> points) {
-        // 3. 遍历所有的Point，并使用TDengineService的querySensorDataByTimeRangeAndPointKey方法查询点位数据
-        Map<Long, Map<String, String>> dataMap = new HashMap<>();
+        // 首先尝试从缓存中获取数据
+        List<TrailHistoryData> result = trailHistoryCacheService.getIfPresent(trial.getId());
         
-        long now = System.currentTimeMillis();
-        long startTime = trial.getStartTimestamp();
-        long endTime = trial.getEndTimestamp() != null ? trial.getEndTimestamp() : now;
-        
-        try {
-            // 存储所有CompletableFuture的列表
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
+        // 如果缓存中没有数据，则查询数据库
+        if (result == null) {
+            // 3. 遍历所有的Point，并使用TDengineService的querySensorDataByTimeRangeAndPointKey方法查询点位数据
+            Map<Long, Map<String, String>> dataMap = new HashMap<>();
             
-            // 遍历所有的Point
-            for (Point point : points) {
-                // 注意for循环变量逃逸问题，创建final变量
-                final String pointIdentity = point.getIdentity();
+            long now = System.currentTimeMillis();
+            long startTime = trial.getStartTimestamp();
+            long endTime = trial.getEndTimestamp() != null ? trial.getEndTimestamp() : now;
+            
+            try {
+                // 存储所有CompletableFuture的列表
+                List<CompletableFuture<Void>> futures = new ArrayList<>();
+                
+                // 遍历所有的Point
+                for (Point point : points) {
+                    // 注意for循环变量逃逸问题，创建final变量
+                    final String pointIdentity = point.getIdentity();
 
-                // 为每个点位的时间区间创建一个CompletableFuture
-                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
-                        startTime,
-                        endTime,
-                        pointIdentity
-                    );
+                    // 为每个点位的时间区间创建一个CompletableFuture
+                    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                        List<Map<String, Object>> pointDataList = tdengineService.querySensorDataByTimeRangeAndPointKey(
+                            startTime,
+                            endTime,
+                            pointIdentity
+                        );
 
-                    // 同步处理dataMap，注意并发安全问题
-                    synchronized (dataMap) {
-                        for (Map<String, Object> pointData : pointDataList) {
-                            Timestamp ts = (Timestamp) pointData.get("ts");
-                            Long timestamp = ts.getTime();
-                            String value = (String) pointData.get("point_value");
+                        // 同步处理dataMap，注意并发安全问题
+                        synchronized (dataMap) {
+                            for (Map<String, Object> pointData : pointDataList) {
+                                Timestamp ts = (Timestamp) pointData.get("ts");
+                                Long timestamp = ts.getTime();
+                                String value = (String) pointData.get("point_value");
 
-                            dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(pointIdentity, value);
+                                dataMap.computeIfAbsent(timestamp, k -> new HashMap<>()).put(pointIdentity, value);
+                            }
                         }
-                    }
-                }, executorService);
+                    }, executorService);
 
-                futures.add(future);
+                    futures.add(future);
+                }
+                
+                // 等待所有任务完成
+                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+                
+            } catch (Exception e) {
+                log.error("查询点位数据时发生错误: {}", e.getMessage(), e);
+                throw new RuntimeException("查询点位数据时发生错误: " + e.getMessage(), e);
             }
             
-            // 等待所有任务完成
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            // 4. 整合数据：将所有数据整合到一个List<TrailHistoryData>中
+            result = new ArrayList<>();
+            for (Map.Entry<Long, Map<String, String>> entry : dataMap.entrySet()) {
+                result.add(new TrailHistoryData(entry.getKey(), entry.getValue()));
+            }
             
-        } catch (Exception e) {
-            log.error("查询点位数据时发生错误: {}", e.getMessage(), e);
-            throw new RuntimeException("查询点位数据时发生错误: " + e.getMessage(), e);
+            // 5. 按时间戳升序排列
+            result.sort((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()));
+            
+            // 将结果放入缓存
+            trailHistoryCacheService.put(trial.getId(), result);
         }
-        
-        // 4. 整合数据：将所有数据整合到一个List<TrailHistoryData>中
-        List<TrailHistoryData> result = new ArrayList<>();
-        for (Map.Entry<Long, Map<String, String>> entry : dataMap.entrySet()) {
-            result.add(new TrailHistoryData(entry.getKey(), entry.getValue()));
-        }
-        
-        // 5. 按时间戳升序排列
-        result.sort((a, b) -> a.getTimestamp().compareTo(b.getTimestamp()));
         
         return result;
     }

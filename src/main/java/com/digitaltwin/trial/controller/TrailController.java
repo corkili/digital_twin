@@ -217,4 +217,26 @@ public class TrailController {
             return endTime;
         }
     }
+    
+    /**
+     * 设置推送速率
+     *
+     * @param uniqueId 唯一标识符
+     * @param rate 推送速率
+     * @return 设置结果
+     */
+    @Operation(summary = "设置推送速率")
+    @PostMapping("/set_push_rate")
+    public WebSocketResponse<String> setPushRate(
+            @Parameter(description = "唯一标识符") @RequestParam String uniqueId,
+            @Parameter(description = "推送速率") @RequestParam double rate) {
+        try {
+            // 调用TrialService设置推送速率
+            trialService.setPushRate(uniqueId, rate);
+            return WebSocketResponse.success("推送速率设置成功");
+        } catch (Exception e) {
+            log.error("设置推送速率失败: {}", e.getMessage(), e);
+            return WebSocketResponse.error("设置推送速率失败: " + e.getMessage());
+        }
+    }
 }
