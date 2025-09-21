@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import com.digitaltwin.system.util.SecurityContext;
 import com.digitaltwin.system.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -96,6 +98,16 @@ public class DeviceService {
         return deviceRepository.findAll().stream()
                 .map(this::convertToDeviceDtoWithStatus)
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 分页获取所有Device
+     * @param pageable 分页参数
+     * @return 分页的Device列表
+     */
+    public Page<DeviceDto> getAllDevices(Pageable pageable) {
+        return deviceRepository.findAll(pageable)
+                .map(this::convertToDeviceDtoWithStatus);
     }
     
     /**
