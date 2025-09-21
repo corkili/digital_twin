@@ -147,17 +147,17 @@ public class PointManagementController {
     }
     
     /**
-     * 删除点位
-     * @param id 点位ID
+     * 批量删除点位
+     * @param ids 点位ID列表
      * @return 操作结果
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deletePoint(@PathVariable Long id) {
+    @DeleteMapping("/{ids}")
+    public ResponseEntity<ApiResponse> deletePoints(@PathVariable List<Long> ids) {
         try {
-            pointService.deletePoint(id);
-            return ResponseEntity.ok(ApiResponse.success("Point deleted successfully", null));
+            pointService.deletePoints(ids);
+            return ResponseEntity.ok(ApiResponse.success("Points deleted successfully", null));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to delete point: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to delete points: " + e.getMessage()));
         }
     }
 
