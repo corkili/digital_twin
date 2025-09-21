@@ -153,6 +153,13 @@
                 <artifactId>sdk-client</artifactId>
                 <version>0.6.15</version>
             </dependency>
+        
+        <!-- Caffeine缓存 -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>3.1.8</version>
+        </dependency>
     </dependencies>
 
     <build>
