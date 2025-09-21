@@ -460,6 +460,20 @@ public class PointService {
     }
 
     /**
+     * 批量删除点位
+     *
+     * @param ids 点位ID列表
+     */
+    public void deletePoints(List<Long> ids) {
+        // 验证所有点位是否存在
+        List<Point> points = pointRepository.findAllById(ids);
+        if (points.size() != ids.size()) {
+            throw new RuntimeException("部分点位不存在");
+        }
+        pointRepository.deleteAllById(ids);
+    }
+
+    /**
      * 设置告警
      *
      * @param request 告警设置请求
