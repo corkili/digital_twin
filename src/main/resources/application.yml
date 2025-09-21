@@ -124,6 +124,14 @@ alarm:
   # 告警防重复时间间隔（分钟）
   duplicate-prevention-minutes: 60
 
+trail:
+  history:
+    cache:
+      # 缓存过期时间（毫秒），默认30分钟
+      expire-after-write: 1800000
+      # 缓存最大条目数，默认1000
+      maximum-size: 10
+
 websocket:
   # 主题配置
   topics:

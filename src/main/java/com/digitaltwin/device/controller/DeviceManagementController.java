@@ -7,6 +7,8 @@ import com.digitaltwin.device.dto.device.UpdateDeviceRequest;
 import com.digitaltwin.device.service.DeviceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -75,13 +77,24 @@ public class DeviceManagementController {
     }
     
     /**
-     * 获取所有Device
+     * 获取所有Device，支持分页参数
+     * @param pageable 分页参数，不提供page/size参数时返回全部数据
      */
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllDevices() {
+    public ResponseEntity<ApiResponse> getAllDevices(Pageable pageable) {
         try {
-            List<DeviceDto> devices = deviceService.getAllDevices();
-            return ResponseEntity.ok(ApiResponse.success("查询成功", devices));
+            // 判断是否提供了分页参数（page和size）
+            boolean hasPaginationParams = pageable.isPaged() && pageable.getPageNumber() >= 0 && pageable.getPageSize() > 0;
+            
+            if (hasPaginationParams) {
+                // 使用分页查询
+                Page<DeviceDto> devicesPage = deviceService.getAllDevices(pageable);
+                return ResponseEntity.ok(ApiResponse.success("分页查询成功", devicesPage));
+            } else {
+                // 返回全部数据
+                List<DeviceDto> devices = deviceService.getAllDevices();
+                return ResponseEntity.ok(ApiResponse.success("查询成功", devices));
+            }
         } catch (Exception e) {
             log.error("查询Device失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

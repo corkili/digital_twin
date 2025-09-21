@@ -6,6 +6,8 @@ import com.digitaltwin.device.service.ChannelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -69,13 +71,23 @@ public class ChannelManagementController {
     }
     
     /**
-     * 获取所有Channel
+     * 获取所有Channel，支持分页
      */
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllChannels() {
+    public ResponseEntity<ApiResponse> getAllChannels(Pageable pageable) {
         try {
-            List<Channel> channels = channelService.getAllChannels();
-            return ResponseEntity.ok(ApiResponse.success("查询成功", channels));
+            // 检查是否提供了分页参数（page、size）
+            boolean hasPagination = pageable.getPageNumber() > 0 || pageable.getPageSize() < Integer.MAX_VALUE;
+            
+            if (hasPagination) {
+                // 使用分页查询
+                Page<Channel> channelPage = channelService.getAllChannels(pageable);
+                return ResponseEntity.ok(ApiResponse.success("查询成功", channelPage));
+            } else {
+                // 没有分页参数，返回全部数据
+                List<Channel> channels = channelService.getAllChannels();
+                return ResponseEntity.ok(ApiResponse.success("查询成功", channels));
+            }
         } catch (Exception e) {
             log.error("查询所有Channel失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

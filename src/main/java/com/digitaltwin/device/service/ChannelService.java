@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import com.digitaltwin.system.util.SecurityContext;
 import com.digitaltwin.system.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -101,6 +103,13 @@ public class ChannelService {
     public List<Channel> getAllChannels() {
         return channelRepository.findAll();
     }
+    
+    /**
+     * 分页获取所有Channel
+     */
+    public Page<Channel> getAllChannels(Pageable pageable) {
+        return channelRepository.findAll(pageable);
+    }
 
     /**
      * 更新Channel
@@ -114,13 +123,17 @@ public class ChannelService {
             throw new RuntimeException("Channel不存在，ID: " + id);
         }
 
-        channel.setId(id);
+        Optional<Channel> channelOptional = channelRepository.findById( id);
+        Channel oldChannel = channelOptional.get();
+        oldChannel.setName(channel.getName());
+        oldChannel.setServerUrl(channel.getServerUrl());
+        oldChannel.setDescription(channel.getDescription());
         // 设置审计修改人
         User currentUser = SecurityContext.getCurrentUser();
         if (currentUser != null) {
-            channel.setUpdatedBy(currentUser.getId());
+            oldChannel.setUpdatedBy(currentUser.getId());
         }
-        Channel updatedChannel = channelRepository.save(channel);
+        Channel updatedChannel = channelRepository.save(oldChannel);
         log.info("更新Channel成功，ID: {}", id);
         return updatedChannel;
     }
