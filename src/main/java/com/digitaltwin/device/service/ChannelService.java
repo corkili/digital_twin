@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import com.digitaltwin.system.util.SecurityContext;
 import com.digitaltwin.system.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -100,6 +102,13 @@ public class ChannelService {
      */
     public List<Channel> getAllChannels() {
         return channelRepository.findAll();
+    }
+    
+    /**
+     * 分页获取所有Channel
+     */
+    public Page<Channel> getAllChannels(Pageable pageable) {
+        return channelRepository.findAll(pageable);
     }
 
     /**
