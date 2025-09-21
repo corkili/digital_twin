@@ -114,13 +114,17 @@ public class ChannelService {
             throw new RuntimeException("Channel不存在，ID: " + id);
         }
 
-        channel.setId(id);
+        Optional<Channel> channelOptional = channelRepository.findById( id);
+        Channel oldChannel = channelOptional.get();
+        oldChannel.setName(channel.getName());
+        oldChannel.setServerUrl(channel.getServerUrl());
+        oldChannel.setDescription(channel.getDescription());
         // 设置审计修改人
         User currentUser = SecurityContext.getCurrentUser();
         if (currentUser != null) {
-            channel.setUpdatedBy(currentUser.getId());
+            oldChannel.setUpdatedBy(currentUser.getId());
         }
-        Channel updatedChannel = channelRepository.save(channel);
+        Channel updatedChannel = channelRepository.save(oldChannel);
         log.info("更新Channel成功，ID: {}", id);
         return updatedChannel;
     }
