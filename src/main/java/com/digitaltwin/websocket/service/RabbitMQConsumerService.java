@@ -70,7 +70,7 @@ public class RabbitMQConsumerService {
             alarmAnalysisService.analyzeSensorData(sensorData);
             
             // 创建WebSocket响应
-            WebSocketResponse<SensorData> response = WebSocketResponse.success(sensorData);
+            WebSocketResponse<SensorData> response = WebSocketResponse.success(sensorData.NewDataWithFormatDecimal());
             
             // 推送到WebSocket
             webSocketPushService.pushToSubscribers(response);

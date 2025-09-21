@@ -11,6 +11,8 @@ import lombok.AllArgsConstructor;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.math.BigDecimal;
+
 /**
  * 传感器数据模型类
  * 用于接收从RabbitMQ消费的JSON格式数据
@@ -68,5 +70,34 @@ public class SensorData {
             timestamp = this.Timestamp;
         }
         return timestamp;
+    }
+
+    private static String formatDecimal(String pointValue) {
+        try {
+                BigDecimal bd = new BigDecimal(pointValue);
+                pointValue = bd.setScale(2, BigDecimal.ROUND_HALF_UP).toString();
+            } catch (NumberFormatException e) {
+                // 如果不是数值，保持原值
+            }
+        return pointValue;
+    }
+
+    public SensorData NewDataWithFormatDecimal() {
+        SensorData newData = new SensorData();
+        newData.setID(this.ID);
+        newData.setTimestamp(this.Timestamp);
+        newData.setDeviceName(this.deviceName);
+        newData.setTs(this.ts);
+        newData.setDeviceType(this.deviceType);
+        Map<String, Object> newPointDataMap = new HashMap<>();
+        for (Map.Entry<String, Object> entry : this.PointDataMap.entrySet()) {
+            if (entry.getValue() instanceof String) {
+                newPointDataMap.put(entry.getKey(), formatDecimal((String) entry.getValue()));
+            } else {
+                newPointDataMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+        newData.setPointDataMap(newPointDataMap);
+        return newData;
     }
 }
