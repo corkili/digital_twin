@@ -96,8 +96,10 @@ public class PointService {
 
         OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
         timeseries.setKey(point.getIdentity());
-        timeseries.setType("identity");
-        timeseries.setValue("ns=2;s="+point.getPath());
+//        timeseries.setType("identifier");
+//        timeseries.setValue("ns=2;s="+point.getPath());
+        timeseries.setType("path");
+        timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + point.getPath() + "}");
 
         OpcUaConfigData configData = null;
 
@@ -114,7 +116,8 @@ public class PointService {
                 OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
                 timeseriesTemp.setKey(channelPoint.getIdentity());
                 timeseriesTemp.setType("path");
-                timeseries.setValue("ns=2;s="+point.getPath());
+//                timeseries.setValue("ns=2;s="+point.getPath());
+                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
                 timeseriesList.add(timeseriesTemp);
             }
         }
@@ -421,8 +424,10 @@ public class PointService {
                 }
                 OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
                 timeseries.setKey(channelPoint.getIdentity());
+//                timeseries.setType("path");
+//                timeseries.setValue("ns=2;s="+point.getPath());
                 timeseries.setType("path");
-                timeseries.setValue("ns=2;s="+point.getPath());
+                timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
                 timeseriesList.add(timeseries);
             }
         }
