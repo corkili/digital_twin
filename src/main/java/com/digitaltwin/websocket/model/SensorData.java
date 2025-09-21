@@ -94,7 +94,7 @@ public class SensorData {
             if (entry.getValue() instanceof String) {
                 newPointDataMap.put(entry.getKey(), formatDecimal((String) entry.getValue()));
             } else {
-                newPointDataMap.put(entry.getKey(), entry.getValue().toString());
+                newPointDataMap.put(entry.getKey(), entry.getValue());
             }
         }
         newData.setPointDataMap(newPointDataMap);
