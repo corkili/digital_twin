@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -226,7 +227,15 @@ public class TDengineService {
                 while (rs.next()) {
                     Map<String, Object> row = new HashMap<>();
                     row.put("ts", rs.getTimestamp("ts"));
-                    row.put("point_value", rs.getString("point_value"));
+                    // 处理point_value，如果是数值则保留两位小数
+                    String pointValue = rs.getString("point_value");
+                    try {
+                        BigDecimal bd = new BigDecimal(pointValue);
+                        pointValue = bd.setScale(2, BigDecimal.ROUND_HALF_UP).toString();
+                    } catch (NumberFormatException e) {
+                        // 如果不是数值，保持原值
+                    }
+                    row.put("point_value", pointValue);
                     result.add(row);
                 }
             }
@@ -265,7 +274,15 @@ public class TDengineService {
                 while (rs.next()) {
                     Map<String, Object> row = new HashMap<>();
                     row.put("ts", rs.getTimestamp("ts"));
-                    row.put("point_value", rs.getString("point_value"));
+                    // 处理point_value，如果是数值则保留两位小数
+                    String pointValue = rs.getString("point_value");
+                    try {
+                        BigDecimal bd = new BigDecimal(pointValue);
+                        pointValue = bd.setScale(2, BigDecimal.ROUND_HALF_UP).toString();
+                    } catch (NumberFormatException e) {
+                        // 如果不是数值，保持原值
+                    }
+                    row.put("point_value", pointValue);
                     result.add(row);
                 }
             }

@@ -18,6 +18,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import java.math.BigDecimal;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -260,18 +262,26 @@ public class AlarmAnalysisService {
                         alarmConfig.getDuplicatePreventionMinutes(), point.getIdentity());
                 return;
             }
-            
+
             Alarm alarm = new Alarm();
             alarm.setTimestamp(currentTime); // 使用当前时间作为告警产生时间
             alarm.setSensorId(sensorData.getID());
             alarm.setSensorTimestamp(sensorData.getRealTimestamp());
             alarm.setPointId(point.getIdentity());
-            alarm.setPointValue(pointValue);
             alarm.setAlarmType(alarmType);
             alarm.setAlarmThreshold(alarmThreshold);
             alarm.setDeviceId(point.getDevice().getId());
             alarm.setLastSensorTimestamp(sensorData.getRealTimestamp()); // 设置lastSensorTimestamp
             
+            try {
+                BigDecimal bd = new BigDecimal(pointValue);
+                String pv = bd.setScale(2, BigDecimal.ROUND_HALF_UP).toString();
+                alarm.setPointValue(pv);
+            } catch (NumberFormatException e) {
+                // 如果点位值不是数值，设置为null
+                alarm.setPointValue(pointValue);
+            }
+
             alarmRepository.save(alarm);
             
             log.info("生成告警: 设备={}, 点位={}, 类型={}, 值={}, 阈值={}", 
