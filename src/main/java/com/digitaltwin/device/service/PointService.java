@@ -96,8 +96,8 @@ public class PointService {
 
         OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
         timeseries.setKey(point.getIdentity());
-        timeseries.setType("path");
-        timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + point.getPath() + "}");
+        timeseries.setType("identity");
+        timeseries.setValue("ns=2;s="+point.getPath());
 
         OpcUaConfigData configData = null;
 
@@ -114,7 +114,7 @@ public class PointService {
                 OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
                 timeseriesTemp.setKey(channelPoint.getIdentity());
                 timeseriesTemp.setType("path");
-                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+                timeseries.setValue("ns=2;s="+point.getPath());
                 timeseriesList.add(timeseriesTemp);
             }
         }
@@ -414,16 +414,19 @@ public class PointService {
 
         List<OpcUaConfigData.Timeseries> timeseriesList = new ArrayList<>();
 
-        for (Point channelPoint : device.getPoints()) {
-            if(channelPoint.getId().equals(point.getId())){
-                continue;
+        for (Device device1 : device.getChannel().getDevices()) {
+            for (Point channelPoint : device1.getPoints()) {
+                if(channelPoint.getId().equals(point.getId())){
+                    continue;
+                }
+                OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
+                timeseries.setKey(channelPoint.getIdentity());
+                timeseries.setType("path");
+                timeseries.setValue("ns=2;s="+point.getPath());
+                timeseriesList.add(timeseries);
             }
-            OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
-            timeseries.setKey(channelPoint.getIdentity());
-            timeseries.setType("path");
-            timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
-            timeseriesList.add(timeseries);
         }
+
         configData.getConfigurationJson().getMapping().get(0).setTimeseries(timeseriesList);
 
         List<String> totalConnectorNames = channelRepository.findAll().stream()
