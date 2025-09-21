@@ -1,14 +1,32 @@
 import SockJS from 'sockjs-client';
 import { Client, Message } from '@stomp/stompjs';
-import { SensorData, WebSocketResponse, ConnectionStatus } from '../types';
+import {
+  SensorData,
+  TestPhaseResponse,
+  AlarmData,
+  HistoryData,
+  WebSocketResponse,
+  ConnectionStatus,
+  TopicData
+} from '../types';
 
 class WebSocketService {
   private client: Client | null = null;
   private connectionStatus: ConnectionStatus = { isConnected: false };
-  private dataCallback: ((data: SensorData) => void) | null = null;
+  private topicCallbacks: {
+    sensorData: ((data: SensorData) => void) | null;
+    testPhase: ((data: TestPhaseResponse) => void) | null;
+    alarms: ((data: AlarmData) => void) | null;
+    historyData: ((data: HistoryData) => void) | null;
+  } = {
+    sensorData: null,
+    testPhase: null,
+    alarms: null,
+    historyData: null,
+  };
   private statusCallback: ((status: ConnectionStatus) => void) | null = null;
 
-  constructor(private url: string = 'http://umi.xyz:8081/api/ws') {}
+  constructor(private url: string = 'http://localhost:8081/api/ws') {}
 
   connect() {
     if (this.client && this.client.active) {
@@ -35,21 +53,8 @@ class WebSocketService {
         this.statusCallback(this.connectionStatus);
       }
 
-      // Subscribe to sensor data topic
-      this.client?.subscribe('/topic/sensor-data', (message: Message) => {
-        if (message.body) {
-          try {
-            const response = JSON.parse(message.body);
-            // 处理嵌套的数据格式
-            const sensorData = response.data || response;
-            if (this.dataCallback) {
-              this.dataCallback(sensorData);
-            }
-          } catch (error) {
-            console.error('Error parsing sensor data:', error);
-          }
-        }
-      });
+      // Subscribe to all topics
+      this.subscribeToAllTopics();
     };
 
     this.client.onDisconnect = () => {
@@ -77,8 +82,85 @@ class WebSocketService {
 
 
 
-  setDataCallback(callback: (data: SensorData) => void) {
-    this.dataCallback = callback;
+  private subscribeToAllTopics() {
+    if (!this.client) return;
+
+    // 订阅传感器数据主题
+    this.client.subscribe('/topic/sensor-data', (message: Message) => {
+      if (message.body) {
+        try {
+          const response: WebSocketResponse<SensorData> = JSON.parse(message.body);
+          console.log('收到传感器数据:', response);
+          if (this.topicCallbacks.sensorData && response.data) {
+            this.topicCallbacks.sensorData(response.data);
+          }
+        } catch (error) {
+          console.error('Error parsing sensor data:', error);
+        }
+      }
+    });
+
+    // 订阅测试阶段数据主题
+    this.client.subscribe('/topic/test-phase', (message: Message) => {
+      if (message.body) {
+        try {
+          const response: WebSocketResponse<TestPhaseResponse> = JSON.parse(message.body);
+          console.log('收到测试阶段数据:', response);
+          if (this.topicCallbacks.testPhase && response.data) {
+            this.topicCallbacks.testPhase(response.data);
+          }
+        } catch (error) {
+          console.error('Error parsing test phase data:', error);
+        }
+      }
+    });
+
+    // 订阅告警数据主题
+    this.client.subscribe('/topic/alarm-data', (message: Message) => {
+      if (message.body) {
+        try {
+          const response: WebSocketResponse<AlarmData> = JSON.parse(message.body);
+          console.log('收到告警数据:', response);
+          if (this.topicCallbacks.alarms && response.data) {
+            this.topicCallbacks.alarms(response.data);
+          }
+        } catch (error) {
+          console.error('Error parsing alarm data:', error);
+        }
+      }
+    });
+
+    // 订阅历史数据主题
+    this.client.subscribe('/topic/history_data', (message: Message) => {
+      if (message.body) {
+        try {
+          const response: WebSocketResponse<HistoryData> = JSON.parse(message.body);
+          console.log('收到历史数据:', response);
+          if (this.topicCallbacks.historyData && response.data) {
+            this.topicCallbacks.historyData(response.data);
+          }
+        } catch (error) {
+          console.error('Error parsing history data:', error);
+        }
+      }
+    });
+  }
+
+  // 设置回调函数
+  setSensorDataCallback(callback: (data: SensorData) => void) {
+    this.topicCallbacks.sensorData = callback;
+  }
+
+  setTestPhaseCallback(callback: (data: TestPhaseResponse) => void) {
+    this.topicCallbacks.testPhase = callback;
+  }
+
+  setAlarmCallback(callback: (data: AlarmData) => void) {
+    this.topicCallbacks.alarms = callback;
+  }
+
+  setHistoryDataCallback(callback: (data: HistoryData) => void) {
+    this.topicCallbacks.historyData = callback;
   }
 
   setStatusCallback(callback: (status: ConnectionStatus) => void) {

@@ -72,7 +72,7 @@ public class WebSocketPushService {
 
     /**
      * 推送历史回放数据到所有订阅了历史数据主题的客户端
-     * 
+     *
      * @param response 要推送的响应数据
      * @param <T> 响应数据的类型
      */
@@ -82,6 +82,21 @@ public class WebSocketPushService {
             log.debug("历史回放数据已推送到WebSocket主题: /topic/history_data");
         } catch (Exception e) {
             log.error("推送历史回放数据到WebSocket时发生错误: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 推送测试阶段数据到所有订阅了测试阶段主题的客户端
+     *
+     * @param response 要推送的响应数据
+     * @param <T> 响应数据的类型
+     */
+    public <T> void pushTestPhaseToSubscribers(WebSocketResponse<T> response) {
+        try {
+            messagingTemplate.convertAndSend("/topic/test-phase", response);
+            log.debug("测试阶段数据已推送到WebSocket主题: /topic/test-phase");
+        } catch (Exception e) {
+            log.error("推送测试阶段数据到WebSocket时发生错误: {}", e.getMessage(), e);
         }
     }
 }

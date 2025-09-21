@@ -96,7 +96,7 @@ public class UserController {
      * 批量删除用户 - 仅超级管理员可操作
      */
     @Operation(summary = "批量删除用户", description = "批量删除指定的用户列表，仅超级管理员(SA)可操作")
-    @DeleteMapping("/batch")
+    @PostMapping("/batch-delete")
     public ResponseEntity<ApiResponse> batchDeleteUsers(
             @Parameter(description = "用户ID列表", required = true) @RequestBody List<Long> userIds) {
         try {

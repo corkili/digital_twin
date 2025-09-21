@@ -8,6 +8,8 @@ import com.digitaltwin.device.service.PointCollectionStatsService;
 import com.digitaltwin.device.service.PointFailureRecordService;
 import com.digitaltwin.websocket.config.RabbitMQConfig;
 import com.digitaltwin.websocket.model.SensorData;
+import com.digitaltwin.websocket.model.TestPhaseItem;
+import com.digitaltwin.websocket.model.TestPhaseResponse;
 import com.digitaltwin.websocket.model.WebSocketResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +17,10 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * RabbitMQ消费者服务
@@ -26,6 +30,18 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RabbitMQConsumerService {
+
+    // 测试阶段列表常量
+    private static final List<String> TEST_PHASES = Arrays.asList(
+        "模型安装",
+        "打开电源",
+        "注入氛围气体",
+        "开启冷却水/气阀门",
+        "石英灯阵加热",
+        "实时监控试验过程",
+        "石英灯阵加热停止",
+        "关闭冷却水/气阀门"
+    );
 
     private final WebSocketPushService webSocketPushService;
     private final TDengineService tdengineService;
@@ -53,6 +69,9 @@ public class RabbitMQConsumerService {
 
             // 检查EStop点位值变化
             checkEStopPoint(sensorData);
+
+            // 检查TestPhase字段变化
+            checkTestPhase(sensorData);
 
             // 临时增加id和timestamp
             if (sensorData.getID() == null || sensorData.getID().isEmpty()) {
@@ -131,6 +150,52 @@ public class RabbitMQConsumerService {
             }
         } catch (Exception e) {
             log.error("检查EStop点位时发生错误: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 检查TestPhase字段值变化，推送测试阶段信息
+     *
+     * @param sensorData 传感器数据
+     */
+    private void checkTestPhase(SensorData sensorData) {
+        try {
+            // 检查是否存在TestPhase字段
+            if (sensorData.getPointDataMap() != null &&
+                sensorData.getPointDataMap().containsKey("TestPhase")) {
+
+                Object testPhaseValue = sensorData.getPointDataMap().get("TestPhase");
+
+                if (testPhaseValue != null) {
+                    String testPhaseStr = testPhaseValue.toString();
+
+                    // 检查是否在预定义列表中
+                    if (TEST_PHASES.contains(testPhaseStr)) {
+                        // 创建测试阶段列表，标记当前阶段
+                        List<TestPhaseItem> phases = TEST_PHASES.stream()
+                            .map(phase -> new TestPhaseItem(phase, phase.equals(testPhaseStr)))
+                            .collect(Collectors.toList());
+
+                        // 创建响应对象
+                        TestPhaseResponse response = new TestPhaseResponse(
+                            phases,
+                            testPhaseStr,
+                            System.currentTimeMillis()
+                        );
+
+                        // 推送到WebSocket
+                        webSocketPushService.pushTestPhaseToSubscribers(
+                            WebSocketResponse.success(response)
+                        );
+
+                        log.info("检测到TestPhase变化，当前阶段: {}", testPhaseStr);
+                    } else {
+                        log.debug("TestPhase值不在预定义列表中: {}", testPhaseStr);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("检查TestPhase字段时发生错误: {}", e.getMessage(), e);
         }
     }
 }

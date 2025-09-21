@@ -4,7 +4,7 @@ import { SensorData, SendStatus } from '../types';
 class ApiService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://umi.xyz:8081') {
+  constructor(baseUrl: string = 'http://localhost:8081') {
     this.baseUrl = baseUrl;
   }
 
