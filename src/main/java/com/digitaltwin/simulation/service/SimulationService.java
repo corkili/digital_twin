@@ -487,4 +487,51 @@ public class SimulationService {
 
         return filteredSteps;
     }
+    
+    /**
+     * 更新试验步骤
+     *
+     * @param experimentId 试验ID
+     * @param steps 新的步骤列表
+     * @return 是否更新成功
+     */
+    @Transactional
+    public boolean updateExperimentSteps(Long experimentId, List<ExperimentStepDto> steps) {
+        try {
+            Optional<SimulationExperiment> experimentOpt = simulationRepository.findById(experimentId);
+            if (!experimentOpt.isPresent()) {
+                log.error("未找到ID为 {} 的试验", experimentId);
+                return false;
+            }
+            
+            // 验证步骤数据结构
+            if (steps == null || steps.isEmpty()) {
+                log.error("步骤数据不能为空");
+                return false;
+            }
+            
+            // 验证每个步骤的必要字段
+            for (ExperimentStepDto step : steps) {
+                if (step.getStepId() == null || step.getStepName() == null || step.getStepName().trim().isEmpty()) {
+                    log.error("步骤数据不完整: stepId={}, stepName={}", step.getStepId(), step.getStepName());
+                    return false;
+                }
+            }
+            
+            // 将步骤列表序列化为JSON
+            String stepsJson = objectMapper.writeValueAsString(steps);
+            
+            // 更新试验的步骤数据
+            SimulationExperiment experiment = experimentOpt.get();
+            experiment.setStepsData(stepsJson);
+            simulationRepository.save(experiment);
+            
+            log.info("成功更新试验 {} 的步骤数据，共 {} 个步骤", experimentId, steps.size());
+            return true;
+            
+        } catch (Exception e) {
+            log.error("更新试验步骤失败: experimentId={}, error={}", experimentId, e.getMessage(), e);
+            return false;
+        }
+    }
 }
