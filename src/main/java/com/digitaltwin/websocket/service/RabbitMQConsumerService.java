@@ -1,9 +1,9 @@
 package com.digitaltwin.websocket.service;
 
 import com.digitaltwin.alarm.service.AlarmAnalysisService;
+import com.digitaltwin.alarm.service.PointCacheService;
 import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.entity.PointFailureRecord;
-import com.digitaltwin.device.repository.PointRepository;
 import com.digitaltwin.device.service.PointCollectionStatsService;
 import com.digitaltwin.device.service.PointFailureRecordService;
 import com.digitaltwin.websocket.config.RabbitMQConfig;
@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,7 +49,7 @@ public class RabbitMQConsumerService {
     private final TDengineService tdengineService;
     private final AlarmAnalysisService alarmAnalysisService;
     private final PointCollectionStatsService pointCollectionStatsService;
-    private final PointRepository pointRepository;
+    private final PointCacheService pointCacheService;
     private final PointFailureRecordService pointFailureRecordService;
 
     /**
@@ -88,14 +90,21 @@ public class RabbitMQConsumerService {
             // 异步进行告警分析
             alarmAnalysisService.analyzeSensorData(sensorData);
             
-            // 创建WebSocket响应
-            WebSocketResponse<SensorData> response = WebSocketResponse.success(sensorData.NewDataWithFormatDecimal());
+            // 创建过滤后的SensorData对象，只包含已发布的点位数据
+            SensorData filteredSensorData = filterPublishedPoints(sensorData);
             
-            // 推送到WebSocket
-            webSocketPushService.pushToSubscribers(response);
-
-            
-            log.debug("成功推送传感器数据到WebSocket: {}", sensorData);
+            // 如果过滤后还有数据，则推送到WebSocket
+            if (filteredSensorData != null && filteredSensorData.IsValidSensorData()) {
+                // 创建WebSocket响应
+                WebSocketResponse<SensorData> response = WebSocketResponse.success(filteredSensorData.NewDataWithFormatDecimal());
+                
+                // 推送到WebSocket
+                webSocketPushService.pushToSubscribers(response);
+                
+                log.debug("成功推送已发布点位数据到WebSocket，共推送 {} 个点位", filteredSensorData.getPointDataMap().size());
+            } else {
+                log.debug("没有已发布的点位数据需要推送");
+            }
             
         } catch (Exception e) {
             log.error("处理传感器数据时发生错误: {}", e.getMessage(), e);
@@ -115,8 +124,8 @@ public class RabbitMQConsumerService {
                 
                 Object estopValue = sensorData.getPointDataMap().get("EStop");
                 
-                // 查找identity为EStop的点位
-                List<Point> points = pointRepository.findByIdentity("EStop");
+                // 从缓存中查找identity为EStop的点位
+                List<Point> points = pointCacheService.getPointsByIdentity("EStop");
                 if (!points.isEmpty()) {
                     Point point = points.get(0); // 取第一个匹配的点位
                     
@@ -151,6 +160,58 @@ public class RabbitMQConsumerService {
         } catch (Exception e) {
             log.error("检查EStop点位时发生错误: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * 过滤未发布的点位数据，只保留已发布的点位
+     *
+     * @param sensorData 原始传感器数据
+     * @return 过滤后的传感器数据，只包含已发布的点位
+     */
+    private SensorData filterPublishedPoints(SensorData sensorData) {
+        if (sensorData == null || sensorData.getPointDataMap() == null) {
+            return null;
+        }
+        
+        // 创建新的SensorData对象
+        SensorData filteredData = new SensorData();
+        filteredData.setID(sensorData.getID());
+        filteredData.setTimestamp(sensorData.getTimestamp());
+        filteredData.setDeviceName(sensorData.getDeviceName());
+        filteredData.setTs(sensorData.getTs());
+        filteredData.setDeviceType(sensorData.getDeviceType());
+        
+        // 保存已发布的点位数据
+        Map<String, Object> filteredPointDataMap = new HashMap<>();
+        
+        // 遍历所有点位数据
+        for (Map.Entry<String, Object> entry : sensorData.getPointDataMap().entrySet()) {
+            String pointIdentity = entry.getKey();
+            
+            // 检查是否是特殊点位(TestPhase和EStop)，这些点位始终保留
+            if ("TestPhase".equals(pointIdentity) || "EStop".equals(pointIdentity)) {
+                filteredPointDataMap.put(pointIdentity, entry.getValue());
+                continue;
+            }
+            
+            // 从缓存中获取点位信息
+            List<Point> points = pointCacheService.getPointsByIdentity(pointIdentity);
+            
+            // 检查点位是否存在且已发布
+            if (!points.isEmpty()) {
+                boolean anyPublished = points.stream().anyMatch(Point::getPublished);
+                if (anyPublished) {
+                    filteredPointDataMap.put(pointIdentity, entry.getValue());
+                } else {
+                    log.debug("过滤掉未发布的点位: {}", pointIdentity);
+                }
+            } else {
+                log.debug("未找到点位信息，过滤点位: {}", pointIdentity);
+            }
+        }
+        
+        filteredData.setPointDataMap(filteredPointDataMap);
+        return filteredData;
     }
 
     /**

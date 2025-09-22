@@ -3,6 +3,7 @@ package com.digitaltwin.trial.dto;
 import com.digitaltwin.trial.entity.Trial;
 import lombok.Data;
 
+import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -29,8 +30,8 @@ public class TrailListResponse {
         private String mode;
         private Long startTimestamp;
         private Long endTimestamp;
-        private String startTime;
-        private String endTime;
+        private LocalDateTime startTime;
+        private LocalDateTime endTime;
 
         public TrailListItem() {}
 
@@ -43,14 +44,14 @@ public class TrailListResponse {
             this.endTimestamp = trial.getEndTimestamp();
             
             // 格式化时间
-//            if (trial.getStartTimestamp() != null) {
-//                LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(trial.getStartTimestamp()), ZoneId.systemDefault());
-//                this.startTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-//            }
-//            if (trial.getEndTimestamp() != null) {
-//                LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(trial.getEndTimestamp()), ZoneId.systemDefault());
-//                this.endTime = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-//            }
+           if (trial.getStartTimestamp() != null) {
+               LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(trial.getStartTimestamp()), ZoneId.systemDefault());
+               this.startTime = dateTime;
+           }
+           if (trial.getEndTimestamp() != null) {
+               LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(trial.getEndTimestamp()), ZoneId.systemDefault());
+               this.endTime = dateTime;
+           }
         }
     }
 }
