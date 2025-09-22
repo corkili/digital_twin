@@ -77,28 +77,35 @@ public class DeviceManagementController {
     }
     
     /**
-     * 获取所有Device，支持分页参数
-     * @param pageable 分页参数，不提供page/size参数时返回全部数据
+     * 获取所有Device（不带分页参数时返回全部数据）
      */
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllDevices(Pageable pageable) {
+    public ResponseEntity<ApiResponse> getAllDevices() {
         try {
-            // 判断是否提供了分页参数（page和size）
-            boolean hasPaginationParams = pageable.isPaged();
-            
-            if (hasPaginationParams) {
-                // 使用分页查询
-                Page<DeviceDto> devicesPage = deviceService.getAllDevices(pageable);
-                return ResponseEntity.ok(ApiResponse.success("分页查询成功", devicesPage));
-            } else {
-                // 返回全部数据
-                List<DeviceDto> devices = deviceService.getAllDevices();
-                return ResponseEntity.ok(ApiResponse.success("查询成功", devices));
-            }
+            // 返回全部数据
+            List<DeviceDto> devices = deviceService.getAllDevices();
+            return ResponseEntity.ok(ApiResponse.success("查询成功", devices));
         } catch (Exception e) {
             log.error("查询Device失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("查询Device失败: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 分页获取所有Device（提供page和size参数时返回分页数据）
+     * @param pageable 分页参数
+     */
+    @GetMapping(params = {"page", "size"})
+    public ResponseEntity<ApiResponse> getAllDevicesWithPagination(Pageable pageable) {
+        try {
+            // 使用分页查询
+            Page<DeviceDto> devicesPage = deviceService.getAllDevices(pageable);
+            return ResponseEntity.ok(ApiResponse.success("分页查询成功", devicesPage));
+        } catch (Exception e) {
+            log.error("分页查询Device失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("分页查询Device失败: " + e.getMessage()));
         }
     }
     
