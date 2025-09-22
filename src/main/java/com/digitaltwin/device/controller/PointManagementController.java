@@ -9,17 +9,21 @@ import com.digitaltwin.device.dto.device.PointValueRequest;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
 import com.digitaltwin.device.dto.device.BatchUpdatePointsStatusRequest;
 import com.digitaltwin.device.service.PointService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
 @RequestMapping("/points")
 @RequiredArgsConstructor
+@Tag(name = "点位管理", description = "提供点位的增删改查管理接口")
 public class PointManagementController {
     
     private final PointService pointService;
@@ -151,8 +155,9 @@ public class PointManagementController {
      * @param ids 点位ID列表
      * @return 操作结果
      */
-    @DeleteMapping("/{ids}")
-    public ResponseEntity<ApiResponse> deletePoints(@PathVariable List<Long> ids) {
+    @Operation(summary = "批量删除点位", description = "根据点位ID列表批量删除点位信息")
+    @PostMapping("/batch-delete")
+    public ResponseEntity<ApiResponse> batchDeletePoints(@Valid @RequestBody List<Long> ids) {
         try {
             pointService.deletePoints(ids);
             return ResponseEntity.ok(ApiResponse.success("Points deleted successfully", null));

@@ -3,6 +3,8 @@ package com.digitaltwin.device.controller;
 import com.digitaltwin.device.dto.ApiResponse;
 import com.digitaltwin.device.entity.Channel;
 import com.digitaltwin.device.service.ChannelService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,12 +13,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/channels")
 @RequiredArgsConstructor
+@Tag(name = "通道管理", description = "提供通道的增删改查管理接口")
 public class ChannelManagementController {
     
     private final ChannelService channelService;
@@ -126,25 +130,11 @@ public class ChannelManagementController {
     }
     
     /**
-     * 删除Channel
+     * 批量删除通道
      */
-    @DeleteMapping("/{ids}")
-    public ResponseEntity<ApiResponse> deleteChannel(@PathVariable List<Long> ids) {
-        try {
-            channelService.deleteChannels(ids);
-            return ResponseEntity.ok(ApiResponse.success("批量删除成功"));
-        } catch (Exception e) {
-            log.error("批量删除Channel失败: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error("批量删除Channel失败: " + e.getMessage()));
-        }
-    }
-    
-    /**
-     * 批量删除Channel
-     */
-    @DeleteMapping
-    public ResponseEntity<ApiResponse> deleteChannels(@RequestBody List<Long> ids) {
+    @Operation(summary = "批量删除通道", description = "根据通道ID列表批量删除通道信息")
+    @PostMapping("/batch-delete")
+    public ResponseEntity<ApiResponse> batchDeleteChannels(@Valid @RequestBody List<Long> ids) {
         try {
             channelService.deleteChannels(ids);
             return ResponseEntity.ok(ApiResponse.success("批量删除成功"));

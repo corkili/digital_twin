@@ -5,6 +5,8 @@ import com.digitaltwin.device.dto.device.DeviceDto;
 import com.digitaltwin.device.dto.device.CreateDeviceRequest;
 import com.digitaltwin.device.dto.device.UpdateDeviceRequest;
 import com.digitaltwin.device.service.DeviceService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -13,12 +15,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @Slf4j
 @RestController
 @RequestMapping("/devices")
 @RequiredArgsConstructor
+@Tag(name = "设备管理", description = "提供设备的增删改查管理接口")
 public class DeviceManagementController {
     
     private final DeviceService deviceService;
@@ -137,10 +141,11 @@ public class DeviceManagementController {
     }
     
     /**
-     * 删除Device
+     * 批量删除设备
      */
-    @DeleteMapping("/{ids}")
-    public ResponseEntity<ApiResponse> deleteDevices(@PathVariable List<Long> ids) {
+    @Operation(summary = "批量删除设备", description = "根据设备ID列表批量删除设备信息")
+    @PostMapping("/batch-delete")
+    public ResponseEntity<ApiResponse> batchDeleteDevices(@Valid @RequestBody List<Long> ids) {
         try {
             deviceService.deleteDevices(ids);
             return ResponseEntity.ok(ApiResponse.success("批量删除成功"));
