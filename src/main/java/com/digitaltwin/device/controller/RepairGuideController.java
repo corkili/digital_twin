@@ -25,23 +25,20 @@ public class RepairGuideController {
 
     /**
      * 获取设备故障修复指南列表
-     * @return 指南列表，按类型分类
+     * @return 指南列表，按类型分类。如果用户已登录，返回个人学习状态；如果未登录，所有isLearned字段为false
      */
-    @Operation(summary = "获取修复指南列表", description = "获取所有设备故障修复指南，按类型分组返回")
+    @Operation(summary = "获取修复指南列表", description = "获取所有设备故障修复指南，按类型分组返回。支持未登录访问，登录用户可查看学习状态")
     @GetMapping
     public ResponseEntity<ApiResponse> getRepairGuides() {
         try {
             List<RepairGuideDto> guides = repairGuideService.getRepairGuides();
-            
+
             // 按类型分组
             Map<String, List<RepairGuideDto>> groupedGuides = guides.stream()
                     .collect(Collectors.groupingBy(RepairGuideDto::getType));
-            
+
             return ResponseEntity.ok(ApiResponse.success(groupedGuides));
         } catch (Exception e) {
-            if ("用户未登录".equals(e.getMessage())) {
-                return ResponseEntity.status(401).body(ApiResponse.error("用户未登录"));
-            }
             return ResponseEntity.ok(ApiResponse.error("获取指南列表失败: " + e.getMessage()));
         }
     }

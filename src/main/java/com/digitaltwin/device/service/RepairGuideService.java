@@ -56,14 +56,17 @@ public class RepairGuideService {
     }
 
     public List<RepairGuideDto> getRepairGuides() {
-        // 获取当前用户
+        // 获取当前用户（可选）
         User currentUser = SecurityContext.getCurrentUser();
-        if (currentUser == null) {
-            throw new RuntimeException("用户未登录");
-        }
 
-        // 查询用户学习状态
-        List<RepairGuideLearnStatus> learnStatusList = repairGuideLearnStatusRepository.findByUserId(currentUser.getId());
+        final List<RepairGuideLearnStatus> learnStatusList;
+
+        // 如果用户已登录，查询用户学习状态
+        if (currentUser != null) {
+            learnStatusList = repairGuideLearnStatusRepository.findByUserId(currentUser.getId());
+        } else {
+            learnStatusList = new ArrayList<>();
+        }
 
         // 设置学习状态并返回指南列表
         return repairGuides.stream().map(guide -> {
@@ -73,9 +76,12 @@ public class RepairGuideService {
             dto.setType(guide.getType());
             dto.setContent(guide.getContent());
 
-            // 设置学习状态
-            boolean isLearned = learnStatusList.stream()
-                    .anyMatch(status -> status.getGuideId().equals(guide.getId()) && status.getIsLearned());
+            // 设置学习状态（未登录时默认为false）
+            boolean isLearned = false;
+            if (currentUser != null) {
+                isLearned = learnStatusList.stream()
+                        .anyMatch(status -> status.getGuideId().equals(guide.getId()) && status.getIsLearned());
+            }
             dto.setIsLearned(isLearned);
 
             return dto;

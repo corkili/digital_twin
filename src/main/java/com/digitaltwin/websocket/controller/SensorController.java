@@ -21,8 +21,8 @@ import java.util.UUID;
 public class SensorController {
 
     private final RabbitTemplate rabbitTemplate;
-    private final String SENSOR_DATA_EXCHANGE = "sensor.data.exchange";
-    private final String SENSOR_DATA_ROUTING_KEY = "sensor.data";
+    private final String SENSOR_DATA_EXCHANGE = "chris_tby";
+    private final String SENSOR_DATA_ROUTING_KEY = "chris_tby";
 
     /**
      * 发送传感器数据到RabbitMQ
