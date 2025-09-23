@@ -68,7 +68,7 @@ public interface KnowledgeRepository extends JpaRepository<Knowledge, Long> {
            "WHERE status = 'ACTIVE' AND (" +
            "title LIKE CONCAT('%', :keyword, '%') OR " +
            "JSON_SEARCH(catalog_data, 'all', CONCAT('%', :keyword, '%')) IS NOT NULL" +
-           ")", 
+           ")",
            nativeQuery = true)
     Page<Knowledge> fullTextSearchWithPagination(@Param("keyword") String keyword, Pageable pageable);
 }

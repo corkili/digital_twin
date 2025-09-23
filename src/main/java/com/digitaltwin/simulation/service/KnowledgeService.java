@@ -230,14 +230,32 @@ public class KnowledgeService {
      */
     public Page<KnowledgeDto> fullTextSearchWithPagination(String keyword, int page, int size, String sortBy, String sortDir) {
         try {
-            Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+            // 将Java字段名转换为数据库列名
+            String dbColumnName = convertToDbColumnName(sortBy);
+            Sort sort = Sort.by(Sort.Direction.fromString(sortDir), dbColumnName);
             Pageable pageable = PageRequest.of(page, size, sort);
-            
+
             Page<Knowledge> knowledgePage = knowledgeRepository.fullTextSearchWithPagination(keyword, pageable);
             return knowledgePage.map(this::convertToDto);
         } catch (Exception e) {
             log.error("分页全文搜索知识库失败: {}", e.getMessage(), e);
             throw new RuntimeException("分页全文搜索知识库失败", e);
+        }
+    }
+
+    /**
+     * 将Java字段名转换为数据库列名
+     * @param javaFieldName Java字段名
+     * @return 数据库列名
+     */
+    private String convertToDbColumnName(String javaFieldName) {
+        switch (javaFieldName) {
+            case "createdAt":
+                return "created_at";
+            case "catalogData":
+                return "catalog_data";
+            default:
+                return javaFieldName;
         }
     }
     
