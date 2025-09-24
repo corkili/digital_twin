@@ -96,10 +96,10 @@ public class PointService {
 
         OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
         timeseries.setKey(point.getIdentity());
-        timeseries.setType("identifier");
-        timeseries.setValue("ns=2;s="+point.getPath());
-//        timeseries.setType("path");
-//        timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + point.getPath() + "}");
+//        timeseries.setType("identifier");
+//        timeseries.setValue("ns=2;s="+point.getPath());
+        timeseries.setType("path");
+        timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + point.getPath() + "}");
 
         OpcUaConfigData configData = null;
 
@@ -115,10 +115,10 @@ public class PointService {
             for (Point channelPoint : device1.getPoints()) {
                 OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
                 timeseriesTemp.setKey(channelPoint.getIdentity());
-                timeseries.setType("identifier");
-                timeseries.setValue("ns=2;s="+point.getPath());
-//                timeseriesTemp.setType("path");
-//                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+//                timeseriesTemp.setType("identifier");
+//                timeseriesTemp.setValue("ns=2;s="+channelPoint.getPath());
+                timeseriesTemp.setType("path");
+                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
                 timeseriesList.add(timeseriesTemp);
             }
         }
@@ -426,7 +426,7 @@ public class PointService {
                 OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
                 timeseries.setKey(channelPoint.getIdentity());
                 timeseries.setType("identifier");
-                timeseries.setValue("ns=2;s="+point.getPath());
+                timeseries.setValue("ns=2;s="+channelPoint.getPath());
 //                timeseries.setType("path");
 //                timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
                 timeseriesList.add(timeseries);
@@ -458,6 +458,45 @@ public class PointService {
         Point point = pointRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Point not found with id: " + id));
         pointRepository.delete(point);
+
+        Device device = point.getDevice(); // 获取点位当前关联的设备
+        OpcUaConfigData configData = null;
+
+        try {
+            configData = ObjectMapper.readValue(device.getChannel().getOpcUaConfig(),OpcUaConfigData.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+
+        List<OpcUaConfigData.Timeseries> timeseriesList = new ArrayList<>();
+
+        for (Device device1 : device.getChannel().getDevices()) {
+            for (Point channelPoint : device1.getPoints()) {
+                if(channelPoint.getId().equals(point.getId())){
+                    continue;
+                }
+                OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
+                timeseries.setKey(channelPoint.getIdentity());
+                timeseries.setType("Identifier");
+                timeseries.setValue("ns=2;s="+channelPoint.getPath());
+//                timeseries.setType("path");
+//                timeseries.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+                timeseriesList.add(timeseries);
+            }
+        }
+
+        configData.getConfigurationJson().getMapping().get(0).setTimeseries(timeseriesList);
+
+        List<String> totalConnectorNames = channelRepository.findAll().stream()
+                .map(Channel::getName)
+                .collect(Collectors.toList());
+        String deviceChannelName = device.getChannel().getName();
+        totalConnectorNames.removeIf(x -> deviceChannelName.equals(x));
+        opcUaConfigService.activeConnectors(totalConnectorNames);
+        String result = opcUaConfigService.sendOpcUaConfig(configData);
+        totalConnectorNames.add(deviceChannelName);
+        opcUaConfigService.activeConnectors(totalConnectorNames);
     }
 
     /**
@@ -471,7 +510,9 @@ public class PointService {
         if (points.size() != ids.size()) {
             throw new RuntimeException("部分点位不存在");
         }
-        pointRepository.deleteAllById(ids);
+        for (Long id : ids) {
+            this.deletePoint(id);
+        }
     }
 
     /**

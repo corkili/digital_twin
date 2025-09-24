@@ -3,12 +3,16 @@ package com.digitaltwin.device.service;
 import com.digitaltwin.alarm.entity.Alarm;
 import com.digitaltwin.alarm.entity.AlarmState;
 import com.digitaltwin.alarm.repository.AlarmRepository;
+import com.digitaltwin.device.dto.OpcUaConfigData;
 import com.digitaltwin.device.dto.device.DeviceDto;
 import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.entity.Channel;
+import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.repository.DeviceRepository;
 import com.digitaltwin.device.repository.ChannelRepository;
 import com.digitaltwin.device.service.DeviceOperationLogService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -27,11 +32,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DeviceService {
-    
+    private final static ObjectMapper ObjectMapper = new ObjectMapper();
+
     private final DeviceRepository deviceRepository;
     private final ChannelRepository channelRepository;
     private final AlarmRepository alarmRepository;
     private final DeviceOperationLogService deviceOperationLogService;
+    private final OpcUaConfigService opcUaConfigService;
+
     
     /**
      * 创建Device
@@ -69,6 +77,43 @@ public class DeviceService {
         );
         
         log.info("创建Device成功，ID: {}", savedDevice.getId());
+
+        OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
+        OpcUaConfigData configData = null;
+
+        try {
+            configData = ObjectMapper.readValue(channel.getOpcUaConfig(),OpcUaConfigData.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        List<OpcUaConfigData.Timeseries> timeseriesList = new ArrayList<>();
+
+        for (Device device1 : channel.getDevices()) {
+            if(device1.getPoints()==null){
+                continue;
+            }
+            for (Point channelPoint : device1.getPoints()) {
+                OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
+                timeseriesTemp.setKey(channelPoint.getIdentity());
+                timeseriesTemp.setType("identifier");
+                timeseriesTemp.setValue("ns=2;s="+channelPoint.getPath());
+//                timeseriesTemp.setType("path");
+//                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+                timeseriesList.add(timeseriesTemp);
+            }
+        }
+        timeseriesList.add(timeseries);
+        configData.getConfigurationJson().getMapping().get(0).setTimeseries(timeseriesList);
+
+        List<String> totalConnectorNames = channelRepository.findAll().stream()
+                .map(Channel::getName)
+                .collect(Collectors.toList());
+        totalConnectorNames.removeIf(x->device.getChannel().getName().equals(x));
+        opcUaConfigService.activeConnectors(totalConnectorNames);
+        String result = opcUaConfigService.sendOpcUaConfig(configData);
+        totalConnectorNames.add(device.getChannel().getName());
+        opcUaConfigService.activeConnectors(totalConnectorNames);
         return convertToDeviceDtoWithStatus(savedDevice);
     }
     
@@ -167,6 +212,45 @@ public class DeviceService {
         );
         
         log.info("更新Device成功，ID: {}", id);
+
+        OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
+        OpcUaConfigData configData = null;
+
+        try {
+            configData = ObjectMapper.readValue(channel.getOpcUaConfig(),OpcUaConfigData.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        List<OpcUaConfigData.Timeseries> timeseriesList = new ArrayList<>();
+
+        for (Device device1 : channel.getDevices()) {
+            for (Point channelPoint : device1.getPoints()) {
+                OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
+                timeseriesTemp.setKey(channelPoint.getIdentity());
+                timeseriesTemp.setType("identifier");
+                timeseriesTemp.setValue("ns=2;s="+channelPoint.getPath());
+//                timeseriesTemp.setType("path");
+//                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+                timeseriesList.add(timeseriesTemp);
+            }
+        }
+        timeseriesList.add(timeseries);
+        configData.getConfigurationJson().getMapping().get(0).setTimeseries(timeseriesList);
+
+        List<String> totalConnectorNames = channelRepository.findAll().stream()
+                .map(Channel::getName)
+                .collect(Collectors.toList());
+        if(device.getChannel()!=null){
+            totalConnectorNames.removeIf(x->device.getChannel().getName().equals(x));
+        }
+        opcUaConfigService.activeConnectors(totalConnectorNames);
+        String result = opcUaConfigService.sendOpcUaConfig(configData);
+        if(device.getChannel()!=null){
+            totalConnectorNames.add(device.getChannel().getName());
+        }
+        opcUaConfigService.activeConnectors(totalConnectorNames);
+
         return convertToDeviceDtoWithStatus(updatedDevice);
     }
     
@@ -189,6 +273,40 @@ public class DeviceService {
         );
 
         log.info("删除Device成功，ID: {}", id);
+
+        OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
+        OpcUaConfigData configData = null;
+
+        try {
+            configData = ObjectMapper.readValue(device.getChannel().getOpcUaConfig(),OpcUaConfigData.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        List<OpcUaConfigData.Timeseries> timeseriesList = new ArrayList<>();
+
+        for (Device device1 : device.getChannel().getDevices()) {
+            for (Point channelPoint : device1.getPoints()) {
+                OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
+                timeseriesTemp.setKey(channelPoint.getIdentity());
+                timeseriesTemp.setType("identifier");
+                timeseriesTemp.setValue("ns=2;s="+channelPoint.getPath());
+//                timeseriesTemp.setType("path");
+//                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+                timeseriesList.add(timeseriesTemp);
+            }
+        }
+        timeseriesList.add(timeseries);
+        configData.getConfigurationJson().getMapping().get(0).setTimeseries(timeseriesList);
+
+        List<String> totalConnectorNames = channelRepository.findAll().stream()
+                .map(Channel::getName)
+                .collect(Collectors.toList());
+        totalConnectorNames.removeIf(x->device.getChannel().getName().equals(x));
+        opcUaConfigService.activeConnectors(totalConnectorNames);
+        String result = opcUaConfigService.sendOpcUaConfig(configData);
+        totalConnectorNames.add(device.getChannel().getName());
+        opcUaConfigService.activeConnectors(totalConnectorNames);
     }
 
     /**
@@ -213,6 +331,40 @@ public class DeviceService {
                     "删除设备: " + device.getName()
             );
             log.info("删除Device成功，ID: {}", device.getId());
+
+            OpcUaConfigData.Timeseries timeseries = new OpcUaConfigData.Timeseries();
+            OpcUaConfigData configData = null;
+
+            try {
+                configData = ObjectMapper.readValue(device.getChannel().getOpcUaConfig(),OpcUaConfigData.class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+
+            List<OpcUaConfigData.Timeseries> timeseriesList = new ArrayList<>();
+
+            for (Device device1 : device.getChannel().getDevices()) {
+                for (Point channelPoint : device1.getPoints()) {
+                    OpcUaConfigData.Timeseries timeseriesTemp = new OpcUaConfigData.Timeseries();
+                    timeseriesTemp.setKey(channelPoint.getIdentity());
+                    timeseriesTemp.setType("identifier");
+                    timeseriesTemp.setValue("ns=2;s="+channelPoint.getPath());
+//                timeseriesTemp.setType("path");
+//                timeseriesTemp.setValue("${Root\\.Objects\\." + OpcUaConfigData.DeviceName + channelPoint.getPath() + "}");
+                    timeseriesList.add(timeseriesTemp);
+                }
+            }
+            timeseriesList.add(timeseries);
+            configData.getConfigurationJson().getMapping().get(0).setTimeseries(timeseriesList);
+
+            List<String> totalConnectorNames = channelRepository.findAll().stream()
+                    .map(Channel::getName)
+                    .collect(Collectors.toList());
+            totalConnectorNames.removeIf(x->device.getChannel().getName().equals(x));
+            opcUaConfigService.activeConnectors(totalConnectorNames);
+            String result = opcUaConfigService.sendOpcUaConfig(configData);
+            totalConnectorNames.add(device.getChannel().getName());
+            opcUaConfigService.activeConnectors(totalConnectorNames);
         }
     }
     

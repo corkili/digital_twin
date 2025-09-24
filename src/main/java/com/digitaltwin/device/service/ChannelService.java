@@ -135,6 +135,28 @@ public class ChannelService {
         }
         Channel updatedChannel = channelRepository.save(oldChannel);
         log.info("更新Channel成功，ID: {}", id);
+
+        List<String> totalConnectorNames = channelRepository.findAll().stream()
+                .map(Channel::getName)
+                .collect(Collectors.toList());
+
+        totalConnectorNames.add(channel.getName());
+        // 创建默认配置
+        OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig(channel.getName(), channel.getServerUrl());
+
+        // 更新服务器URL为用户提供的URL
+        configData.getConfigurationJson().getServer().setUrl(channel.getServerUrl());
+        opcUaConfigService.activeConnectors(totalConnectorNames);
+        // 发送配置到目标URL
+        String result = opcUaConfigService.sendOpcUaConfig(configData);
+
+        String opcUaConfigString = null;
+        try {
+            opcUaConfigString = ObjectMapper.writeValueAsString(configData);
+        } catch (JsonProcessingException e) {
+            log.error("ThingsBoard配置保存失败： ", e);
+        }
+
         return updatedChannel;
     }
 
@@ -144,12 +166,31 @@ public class ChannelService {
      * @param id Channel ID
      */
     public void deleteChannel(Long id) {
-        if (!channelRepository.existsById(id)) {
-            throw new RuntimeException("Channel不存在，ID: " + id);
-        }
+        Channel channel =channelRepository.findById(id).orElseThrow(() -> new RuntimeException("Channel not found with id: " + id));
 
         channelRepository.deleteById(id);
         log.info("删除Channel成功，ID: {}", id);
+
+        List<String> totalConnectorNames = channelRepository.findAll().stream()
+                .map(Channel::getName)
+                .collect(Collectors.toList());
+
+        totalConnectorNames.add(channel.getName());
+        // 创建默认配置
+        OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig(channel.getName(), channel.getServerUrl());
+
+        // 更新服务器URL为用户提供的URL
+        configData.getConfigurationJson().getServer().setUrl(channel.getServerUrl());
+        opcUaConfigService.activeConnectors(totalConnectorNames);
+        // 发送配置到目标URL
+        String result = opcUaConfigService.sendOpcUaConfig(configData);
+
+        String opcUaConfigString = null;
+        try {
+            opcUaConfigString = ObjectMapper.writeValueAsString(configData);
+        } catch (JsonProcessingException e) {
+            log.error("ThingsBoard配置保存失败： ", e);
+        }
     }
 
     /**
@@ -171,6 +212,28 @@ public class ChannelService {
         
         channelRepository.deleteAll(channels);
         log.info("批量删除Channel成功，IDs: {}", ids);
+
+        for (Channel channel : channels) {
+            List<String> totalConnectorNames = channelRepository.findAll().stream()
+                    .map(Channel::getName)
+                    .collect(Collectors.toList());
+
+            // 创建默认配置
+            OpcUaConfigData configData = OpcUaConfigData.createDefaultConfig(channel.getName(), channel.getServerUrl());
+
+            // 更新服务器URL为用户提供的URL
+            configData.getConfigurationJson().getServer().setUrl(channel.getServerUrl());
+            opcUaConfigService.activeConnectors(totalConnectorNames);
+            // 发送配置到目标URL
+            String result = opcUaConfigService.sendOpcUaConfig(configData);
+
+            String opcUaConfigString = null;
+            try {
+                opcUaConfigString = ObjectMapper.writeValueAsString(configData);
+            } catch (JsonProcessingException e) {
+                log.error("ThingsBoard配置保存失败： ", e);
+            }
+        }
     }
 
     /**

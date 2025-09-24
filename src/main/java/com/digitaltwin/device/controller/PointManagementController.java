@@ -2,20 +2,27 @@ package com.digitaltwin.device.controller;
 
 import com.digitaltwin.device.dto.ApiResponse;
 import com.digitaltwin.device.dto.device.AlarmSettingRequest;
+import com.digitaltwin.device.dto.device.BatchUpdatePointsStatusRequest;
 import com.digitaltwin.device.dto.device.CreatePointRequest;
 import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.PointValueRequest;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
-import com.digitaltwin.device.dto.device.BatchUpdatePointsStatusRequest;
 import com.digitaltwin.device.service.PointService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -25,11 +32,12 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "点位管理", description = "提供点位的增删改查管理接口")
 public class PointManagementController {
-    
+
     private final PointService pointService;
-    
+
     /**
      * 创建点位
+     *
      * @param request 创建点位请求
      * @return 点位信息
      */
@@ -42,9 +50,10 @@ public class PointManagementController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to create point: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 根据ID获取点位
+     *
      * @param id 点位ID
      * @return 点位信息
      */
@@ -57,9 +66,10 @@ public class PointManagementController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve point: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 根据标识获取点位
+     *
      * @param identity 点位标识
      * @return 点位信息
      */
@@ -72,9 +82,10 @@ public class PointManagementController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve point: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 获取所有点位
+     *
      * @return 点位列表
      * @deprecated 推荐使用分页接口 /points?page=0&size=10 以提高性能
      */
@@ -88,11 +99,12 @@ public class PointManagementController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve points: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 分页获取点位列表
-     * @param page 页码（从0开始，默认为0）
-     * @param size 每页大小（默认为10）
+     *
+     * @param page     页码（从0开始，默认为0）
+     * @param size     每页大小（默认为10）
      * @param identity 点位标识（可选，用于模糊匹配）
      * @return 分页的点位列表
      */
@@ -119,9 +131,10 @@ public class PointManagementController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve points: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 获取点位总数
+     *
      * @return 点位总数
      */
     @GetMapping("/count")
@@ -136,7 +149,8 @@ public class PointManagementController {
 
     /**
      * 更新点位
-     * @param id 点位ID
+     *
+     * @param id      点位ID
      * @param request 更新点位请求
      * @return 点位信息
      */
@@ -149,9 +163,26 @@ public class PointManagementController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to update point: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 批量删除点位
+     *
+     * @param ids 点位ID列表
+     * @return 操作结果
+     */
+    @DeleteMapping("/{ids}")
+    public ResponseEntity<ApiResponse> deletePoints(@PathVariable List<Long> ids) {
+        try {
+            pointService.deletePoints(ids);
+            return ResponseEntity.ok(ApiResponse.success("Points deleted successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to delete points: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 批量删除点位
+     *
      * @param ids 点位ID列表
      * @return 操作结果
      */
@@ -168,6 +199,7 @@ public class PointManagementController {
 
     /**
      * 设置告警
+     *
      * @param request 告警设置请求
      * @return 操作结果
      */
@@ -183,6 +215,7 @@ public class PointManagementController {
 
     /**
      * 根据点位ID查询其所在分组的所有点位信息
+     *
      * @param pointId 点位ID
      * @return 同一分组内的所有点位列表
      */
@@ -198,6 +231,7 @@ public class PointManagementController {
 
     /**
      * 统计每个设备内的点位数量
+     *
      * @param published 是否发布（可选参数，不传则统计所有点位）
      * @return 设备点位统计列表
      */
@@ -220,6 +254,7 @@ public class PointManagementController {
 
     /**
      * 根据点位ID设置点位值
+     *
      * @param pointId 点位ID
      * @param request 点位值请求
      * @return 操作结果
@@ -233,9 +268,10 @@ public class PointManagementController {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to set point value: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 批量更新点位的发布状态
+     *
      * @param request 批量更新请求
      * @return 更新结果
      */

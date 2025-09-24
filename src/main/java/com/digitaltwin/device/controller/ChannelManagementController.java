@@ -75,27 +75,38 @@ public class ChannelManagementController {
     }
     
     /**
-     * 获取所有Channel，支持分页
+     * 获取所有Channel（不带分页参数时返回全部数据）
      */
+    @Operation(summary = "获取所有通道", description = "获取所有通道信息列表")
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllChannels(Pageable pageable) {
+    public ResponseEntity<ApiResponse> getAllChannels() {
         try {
-            // 检查是否提供了分页参数（page、size）
-            boolean hasPagination = pageable.isPaged();
-            
-            if (hasPagination) {
-                // 使用分页查询
-                Page<Channel> channelPage = channelService.getAllChannels(pageable);
-                return ResponseEntity.ok(ApiResponse.success("查询成功", channelPage));
-            } else {
-                // 没有分页参数，返回全部数据
-                List<Channel> channels = channelService.getAllChannels();
-                return ResponseEntity.ok(ApiResponse.success("查询成功", channels));
-            }
+            // 返回全部数据
+            List<Channel> channels = channelService.getAllChannels();
+            return ResponseEntity.ok(ApiResponse.success("查询成功", channels));
         } catch (Exception e) {
-            log.error("查询所有Channel失败: {}", e.getMessage(), e);
+            log.error("查询Channel失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("查询所有Channel失败: " + e.getMessage()));
+                    .body(ApiResponse.error("查询Channel失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 分页获取所有Channel（提供page和size参数时返回分页数据）
+     *
+     * @param pageable 分页参数
+     */
+    @Operation(summary = "分页获取通道列表", description = "分页查询通道信息")
+    @GetMapping(params = {"page", "size"})
+    public ResponseEntity<ApiResponse> getAllChannelsWithPagination(Pageable pageable) {
+        try {
+            // 使用分页查询
+            Page<Channel> channelPage = channelService.getAllChannels(pageable);
+            return ResponseEntity.ok(ApiResponse.success("分页查询成功", channelPage));
+        } catch (Exception e) {
+            log.error("分页查询Channel失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("分页查询Channel失败: " + e.getMessage()));
         }
     }
     
@@ -128,7 +139,23 @@ public class ChannelManagementController {
                     .body(ApiResponse.error("更新Channel失败: " + e.getMessage()));
         }
     }
-    
+
+    /**
+     * 删除Channel
+     * 批量删除通道
+     */
+    @DeleteMapping("/{ids}")
+    public ResponseEntity<ApiResponse> deleteChannel(@PathVariable List<Long> ids) {
+        try {
+            channelService.deleteChannels(ids);
+            return ResponseEntity.ok(ApiResponse.success("批量删除成功"));
+        } catch (Exception e) {
+            log.error("批量删除Channel失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("批量删除Channel失败: " + e.getMessage()));
+        }
+    }
+
     /**
      * 批量删除通道
      */

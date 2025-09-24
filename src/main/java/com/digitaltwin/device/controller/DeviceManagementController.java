@@ -1,15 +1,15 @@
 package com.digitaltwin.device.controller;
 
 import com.digitaltwin.device.dto.ApiResponse;
-import com.digitaltwin.device.dto.device.DeviceDto;
 import com.digitaltwin.device.dto.device.CreateDeviceRequest;
-import com.digitaltwin.device.dto.device.UpdateDeviceRequest;
-import com.digitaltwin.device.dto.device.DeviceOperationRequest;
-import com.digitaltwin.device.dto.device.DeviceOperationDto;
 import com.digitaltwin.device.dto.device.DeviceDetectionDto;
-import com.digitaltwin.device.service.DeviceService;
-import com.digitaltwin.device.service.DeviceOperationService;
+import com.digitaltwin.device.dto.device.DeviceDto;
+import com.digitaltwin.device.dto.device.DeviceOperationDto;
+import com.digitaltwin.device.dto.device.DeviceOperationRequest;
+import com.digitaltwin.device.dto.device.UpdateDeviceRequest;
 import com.digitaltwin.device.service.DeviceDetectionService;
+import com.digitaltwin.device.service.DeviceOperationService;
+import com.digitaltwin.device.service.DeviceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -33,7 +40,7 @@ public class DeviceManagementController {
     private final DeviceService deviceService;
     private final DeviceOperationService deviceOperationService;
     private final DeviceDetectionService deviceDetectionService;
-    
+
     /**
      * 创建Device
      */
@@ -44,7 +51,7 @@ public class DeviceManagementController {
             com.digitaltwin.device.entity.Device device = new com.digitaltwin.device.entity.Device();
             device.setName(request.getName());
             device.setDescription(request.getDescription());
-            
+
             DeviceDto createdDevice = deviceService.createDevice(device, request.getChannelId());
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("创建成功", createdDevice));
         } catch (Exception e) {
@@ -53,7 +60,7 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("创建Device失败: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 根据ID获取Device
      */
@@ -71,7 +78,7 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("查询Device失败: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 根据名称获取Device
      */
@@ -89,7 +96,7 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("查询Device失败: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 获取所有Device（不带分页参数时返回全部数据）
      */
@@ -106,9 +113,10 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("查询Device失败: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 分页获取所有Device（提供page和size参数时返回分页数据）
+     *
      * @param pageable 分页参数
      */
     @Operation(summary = "分页获取设备列表", description = "分页查询设备信息")
@@ -124,7 +132,7 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("分页查询Device失败: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 根据Channel ID获取Device
      */
@@ -140,7 +148,7 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("查询Device失败: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 更新Device
      */
@@ -151,7 +159,7 @@ public class DeviceManagementController {
             com.digitaltwin.device.entity.Device device = new com.digitaltwin.device.entity.Device();
             device.setName(request.getName());
             device.setDescription(request.getDescription());
-            
+
             DeviceDto updatedDevice = deviceService.updateDevice(id, device, request.getChannelId());
             return ResponseEntity.ok(ApiResponse.success("更新成功", updatedDevice));
         } catch (Exception e) {
@@ -160,7 +168,23 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("更新Device失败: " + e.getMessage()));
         }
     }
-    
+
+    /**
+     * 删除Device
+     * 批量删除设备
+     */
+    @DeleteMapping("/{ids}")
+    public ResponseEntity<ApiResponse> deleteDevices(@PathVariable List<Long> ids) {
+        try {
+            deviceService.deleteDevices(ids);
+            return ResponseEntity.ok(ApiResponse.success("批量删除成功"));
+        } catch (Exception e) {
+            log.error("批量删除Device失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error("批量删除Device失败: " + e.getMessage()));
+        }
+    }
+
     /**
      * 批量删除设备
      */
@@ -176,9 +200,10 @@ public class DeviceManagementController {
                     .body(ApiResponse.error("批量删除Device失败: " + e.getMessage()));
         }
     }
-    
+
     /**
      * 获取设备总数
+     *
      * @return 设备总数
      */
     @Operation(summary = "获取设备总数", description = "查询系统中设备的总数量")

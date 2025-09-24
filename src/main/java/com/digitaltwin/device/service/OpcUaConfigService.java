@@ -100,12 +100,13 @@ public class OpcUaConfigService {
             HttpEntity<Map<String, List<String>>> requestEntity = new HttpEntity<>(requestBody, headers);
 
             // 发送POST请求
-            ResponseEntity<String> response = restTemplate.postForEntity(targetUrl, requestEntity, String.class);
-
-            log.info("连接器创建成功，状态码: {}", response.getStatusCode());
-            log.debug("响应内容: {}", response.getBody());
-
-            return response.getBody();
+//            ResponseEntity<String> response = restTemplate.postForEntity(targetUrl, requestEntity, String.class);
+//
+//            log.info("连接器创建成功，状态码: {}", response.getStatusCode());
+//            log.debug("响应内容: {}", response.getBody());
+//
+//            return response.getBody();
+            return null;
         } catch (Exception e) {
             log.error("创建连接器失败: {}", e.getMessage(), e);
             throw new RuntimeException("创建连接器失败", e);
@@ -132,17 +133,17 @@ public class OpcUaConfigService {
             // 创建请求体
             HttpEntity<Map<String, OpcUaConfigData>> requestEntity = new HttpEntity<>(Map.of(opcUaData.getName(), opcUaData), headers);
 
+            log.info("发送OPC UA配置数据: {}",opcUaData);
             // 发送POST请求
-            ResponseEntity<String> response = restTemplate.postForEntity(targetUrl, requestEntity, String.class);
+//            ResponseEntity<String> response = restTemplate.postForEntity(targetUrl, requestEntity, String.class);
+//
+//            log.info("OPC UA配置数据发送成功，状态码: {}", response.getStatusCode());
+//            log.debug("响应内容: {}", response.getBody());
+//
+//            return response.getBody();
 
-            log.info("OPC UA配置数据发送成功，状态码: {}", response.getStatusCode());
-            log.debug("响应内容: {}", response.getBody());
+            return null;
 
-            // 发送GET请求以使配置生效
-//            triggerConfigurationActivation(token);
-//            triggerServerScopeConfigurationActivation(token);
-
-            return response.getBody();
         } catch (Exception e) {
             log.error("发送OPC UA配置数据失败: {}", e.getMessage(), e);
             throw new RuntimeException("发送OPC UA配置数据失败", e);
