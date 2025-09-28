@@ -8,6 +8,7 @@ import com.digitaltwin.device.dto.device.DevicePointCountDto;
 import com.digitaltwin.device.dto.device.PointDto;
 import com.digitaltwin.device.dto.device.PointValueRequest;
 import com.digitaltwin.device.dto.device.UpdatePointRequest;
+import com.digitaltwin.device.entity.Device;
 import com.digitaltwin.device.service.PointService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,7 +26,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/points")
@@ -282,6 +287,45 @@ public class PointManagementController {
             return ResponseEntity.ok(ApiResponse.success("Points published status updated successfully", updatedPoints));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Failed to update points published status: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 根据标识和设备ID查询点位，并以设备为分组返回
+     *
+     * @param identity 点位标识（可选，模糊匹配）
+     * @param deviceId 设备ID（可选，精确匹配）
+     * @return 按设备分组的点位列表
+     */
+    @GetMapping("/grouped-by-device")
+    @Operation(summary = "搜索点位并按所属设备分组返回", description = "支持identity模糊匹配和deviceId精确匹配")
+    public ResponseEntity<ApiResponse> getPointsGroupedByDevice(
+            @RequestParam(required = false) String identity,
+            @RequestParam(required = false) Long deviceId) {
+        try {
+            Map<Device, List<PointDto>> pointsByDevice = pointService.searchPointsGroupedByDevice(identity, deviceId);
+            
+            // 转换为更友好的返回格式，使用List<Map<String, Object>>结构
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Map.Entry<Device, List<PointDto>> entry : pointsByDevice.entrySet()) {
+                Map<String, Object> devicePointsInfo = new HashMap<>();
+                Device device = entry.getKey();
+                
+                // 设备信息
+                Map<String, Object> deviceInfo = new HashMap<>();
+                deviceInfo.put("id", device.getId());
+                deviceInfo.put("name", device.getName());
+                deviceInfo.put("description", device.getDescription());
+                
+                devicePointsInfo.put("device", deviceInfo);
+                devicePointsInfo.put("points", entry.getValue());
+                
+                result.add(devicePointsInfo);
+            }
+            
+            return ResponseEntity.ok(ApiResponse.success("Points grouped by device retrieved successfully", result));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to retrieve points grouped by device: " + e.getMessage()));
         }
     }
 
