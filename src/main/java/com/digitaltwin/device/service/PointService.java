@@ -175,6 +175,50 @@ public class PointService {
     }
 
     /**
+     * 根据标识搜索点位，按照所属设备分组返回
+     *
+     * @param identity 点位标识（模糊匹配，可选）
+     * @param deviceId 设备ID（精确匹配，可选）
+     * @return 按设备分组的点位列表
+     * 1. 如果提供了identity和deviceId，则在指定设备内搜索符合标识条件的点位
+     * 2. 如果只提供了identity，则搜索所有设备中符合标识条件的点位
+     * 3. 如果只提供了deviceId，则返回该设备的所有点位
+     * 4. 如果都未提供，则返回所有设备的所有点位
+     */
+    public Map<Device, List<PointDto>> searchPointsGroupedByDevice(String identity, Long deviceId) {
+        List<Point> points;
+        if (deviceId != null) {
+            if (identity != null && !identity.isEmpty()) {
+                // 在指定设备内搜索符合标识条件的点位
+                points = pointRepository.findByIdentityContainingAndDeviceId(identity, deviceId);
+            } else {
+                // 返回指定设备的所有点位
+                points = pointRepository.findByDeviceId(deviceId);
+            }
+        } else {
+            if (identity != null && !identity.isEmpty()) {
+                // 搜索所有设备中符合标识条件的点位
+                points = pointRepository.findByIdentityContaining(identity);
+            } else {
+                // 返回所有设备的所有点位
+                points = pointRepository.findAll();
+            }
+        }
+        
+        // 按设备分组
+        Map<Device, List<Point>> pointsByDevice = points.stream()
+                .collect(Collectors.groupingBy(Point::getDevice));
+        
+        // 转换为Map<Device, List<PointDto>>
+        Map<Device, List<PointDto>> result = new HashMap<>();
+        for (Map.Entry<Device, List<Point>> entry : pointsByDevice.entrySet()) {
+            result.put(entry.getKey(), convertPointsToDtos(entry.getValue()));
+        }
+        
+        return result;
+    }
+
+    /**
      * 获取所有点位 - 优化版本
      *
      * @return 点位DTO列表

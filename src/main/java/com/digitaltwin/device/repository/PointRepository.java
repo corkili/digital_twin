@@ -15,6 +15,9 @@ import java.util.Optional;
 @Repository
 public interface PointRepository extends JpaRepository<Point, Long> {
     List<Point> findByIdentity(String identity);
+    List<Point> findByIdentityContaining(String identity);
+    List<Point> findByIdentityContainingAndDeviceId(String identity, Long deviceId);
+    List<Point> findByDeviceId(Long deviceId);
     
     @Query("SELECT p FROM Point p WHERE p.group.id = :groupId " +
            "AND (:pointName IS NULL OR p.identity LIKE %:pointName%) " +
