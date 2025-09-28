@@ -5,6 +5,9 @@ import com.digitaltwin.device.service.PointService;
 import com.digitaltwin.websocket.model.HistoryDataResponse;
 import com.digitaltwin.websocket.model.WebSocketResponse;
 import com.digitaltwin.websocket.service.TDengineService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/data")
 @RequiredArgsConstructor
+@Tag(name = "历史数据管理", description = "提供点位历史数据查询接口，支持按时间范围查询传感器数据")
 public class DataController {
 
     private final PointService pointService;
@@ -28,17 +32,18 @@ public class DataController {
 
     /**
      * 获取历史数据
-     * 
+     *
      * @param pointIdentity 点位标识
      * @param startTime 开始时间
      * @param endTime 结束时间
      * @return 历史数据响应
      */
+    @Operation(summary = "获取点位历史数据", description = "根据点位标识和时间范围查询传感器的历史数据记录")
     @GetMapping("/history")
     public WebSocketResponse<HistoryDataResponse> getHistoryData(
-            @RequestParam String pointIdentity,
-            @RequestParam Long startTime,
-            @RequestParam Long endTime) {
+            @Parameter(description = "点位标识", required = true) @RequestParam String pointIdentity,
+            @Parameter(description = "开始时间戳", required = true) @RequestParam Long startTime,
+            @Parameter(description = "结束时间戳", required = true) @RequestParam Long endTime) {
         try {
             // 先根据pointIdentity查询PointDto
             PointDto pointDto = pointService.getPointByIdentity(pointIdentity);

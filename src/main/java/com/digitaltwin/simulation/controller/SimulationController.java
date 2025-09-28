@@ -9,6 +9,8 @@ import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.dto.UpdateExperimentStepsRequest;
 import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
 import com.digitaltwin.simulation.dto.ExperimentComponentDto;
+import com.digitaltwin.simulation.dto.CreateExperimentRequest;
+import com.digitaltwin.simulation.dto.CreateExperimentResponse;
 import com.digitaltwin.simulation.enums.RoleType;
 import com.digitaltwin.simulation.service.SimulationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,8 +44,33 @@ public class SimulationController {
     private final SimulationService simulationService;
     
     /**
+     * 创建新试验
+     *
+     * @param request 创建试验请求
+     * @return 创建的试验信息
+     */
+    @Operation(summary = "创建新试验", description = "创建一个新的仿真试验，可以选择性地包含试验步骤数据")
+    @PostMapping
+    public ResponseEntity<SimulationApiResponse<CreateExperimentResponse>> createExperiment(
+            @Valid @RequestBody CreateExperimentRequest request) {
+        try {
+            CreateExperimentResponse response = simulationService.createExperiment(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(SimulationApiResponse.success("创建试验成功", response));
+        } catch (IllegalArgumentException e) {
+            log.error("创建试验参数错误: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(SimulationApiResponse.error("创建试验失败: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("创建试验失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("创建试验失败: " + e.getMessage()));
+        }
+    }
+
+    /**
      * 获取模拟试验列表
-     * 
+     *
      * @return 试验列表
      */
     @GetMapping

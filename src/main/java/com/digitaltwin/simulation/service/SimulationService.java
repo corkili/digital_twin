@@ -11,6 +11,8 @@ import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.dto.RoleDto;
 import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
 import com.digitaltwin.simulation.dto.ExperimentComponentDto;
+import com.digitaltwin.simulation.dto.CreateExperimentRequest;
+import com.digitaltwin.simulation.dto.CreateExperimentResponse;
 import com.digitaltwin.simulation.enums.RoleType;
 import com.digitaltwin.simulation.entity.SimulationExperiment;
 import com.digitaltwin.simulation.entity.UserExperimentRecord;
@@ -503,13 +505,13 @@ public class SimulationService {
                 log.error("未找到ID为 {} 的试验", experimentId);
                 return false;
             }
-            
+
             // 验证步骤数据结构
             if (steps == null || steps.isEmpty()) {
                 log.error("步骤数据不能为空");
                 return false;
             }
-            
+
             // 验证每个步骤的必要字段
             for (ExperimentStepDto step : steps) {
                 if (step.getStepId() == null || step.getStepName() == null || step.getStepName().trim().isEmpty()) {
@@ -517,21 +519,84 @@ public class SimulationService {
                     return false;
                 }
             }
-            
+
             // 将步骤列表序列化为JSON
             String stepsJson = objectMapper.writeValueAsString(steps);
-            
+
             // 更新试验的步骤数据
             SimulationExperiment experiment = experimentOpt.get();
             experiment.setStepsData(stepsJson);
             simulationRepository.save(experiment);
-            
+
             log.info("成功更新试验 {} 的步骤数据，共 {} 个步骤", experimentId, steps.size());
             return true;
-            
+
         } catch (Exception e) {
             log.error("更新试验步骤失败: experimentId={}, error={}", experimentId, e.getMessage(), e);
             return false;
+        }
+    }
+
+    /**
+     * 创建新试验
+     *
+     * @param request 创建试验请求
+     * @return 创建的试验信息
+     */
+    @Transactional
+    public CreateExperimentResponse createExperiment(CreateExperimentRequest request) {
+        try {
+            // 验证请求参数
+            if (request.getName() == null || request.getName().trim().isEmpty()) {
+                throw new IllegalArgumentException("试验名称不能为空");
+            }
+
+            // 检查试验名称是否已存在
+            if (simulationRepository.existsByName(request.getName().trim())) {
+                throw new IllegalArgumentException("试验名称已存在: " + request.getName());
+            }
+
+            // 创建试验实体
+            SimulationExperiment experiment = new SimulationExperiment();
+            experiment.setName(request.getName().trim());
+            experiment.setDescription(request.getDescription());
+            experiment.setStatus(request.getStatus() != null ? request.getStatus() : "ACTIVE");
+
+            // 处理步骤数据
+            if (request.getStepsData() != null && !request.getStepsData().isEmpty()) {
+                // 验证步骤数据
+                for (ExperimentStepDto step : request.getStepsData()) {
+                    if (step.getStepId() == null || step.getStepName() == null || step.getStepName().trim().isEmpty()) {
+                        throw new IllegalArgumentException("步骤数据不完整: stepId=" + step.getStepId() + ", stepName=" + step.getStepName());
+                    }
+                }
+
+                // 序列化步骤数据
+                String stepsJson = objectMapper.writeValueAsString(request.getStepsData());
+                experiment.setStepsData(stepsJson);
+            }
+
+            // 保存试验
+            SimulationExperiment savedExperiment = simulationRepository.save(experiment);
+
+            log.info("成功创建试验: id={}, name={}, hasSteps={}",
+                savedExperiment.getId(), savedExperiment.getName(),
+                savedExperiment.getStepsData() != null);
+
+            // 构建响应
+            CreateExperimentResponse response = new CreateExperimentResponse();
+            response.setId(savedExperiment.getId());
+            response.setName(savedExperiment.getName());
+            response.setDescription(savedExperiment.getDescription());
+            response.setStatus(savedExperiment.getStatus());
+            response.setCreatedAt(savedExperiment.getCreatedAt());
+            response.setHasStepsData(savedExperiment.getStepsData() != null);
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("创建试验失败: {}", e.getMessage(), e);
+            throw new RuntimeException("创建试验失败: " + e.getMessage(), e);
         }
     }
 }

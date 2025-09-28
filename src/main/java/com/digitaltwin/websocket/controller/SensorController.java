@@ -2,6 +2,9 @@ package com.digitaltwin.websocket.controller;
 
 import com.digitaltwin.websocket.model.SensorData;
 import com.digitaltwin.websocket.model.WebSocketResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -18,6 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/sensor")
 @RequiredArgsConstructor
+@Tag(name = "传感器数据管理", description = "提供传感器数据的发送和查询接口，支持向RabbitMQ发送数据和获取历史数据")
 public class SensorController {
 
     private final RabbitTemplate rabbitTemplate;
@@ -26,12 +30,14 @@ public class SensorController {
 
     /**
      * 发送传感器数据到RabbitMQ
-     * 
+     *
      * @param sensorData 传感器数据
      * @return 发送结果
      */
+    @Operation(summary = "发送传感器数据", description = "将传感器数据发送到RabbitMQ消息队列中，系统会自动设置唯一ID和时间戳")
     @PostMapping("/send")
-    public WebSocketResponse<String> sendSensorData(@RequestBody SensorData sensorData) {
+    public WebSocketResponse<String> sendSensorData(
+            @Parameter(description = "传感器数据对象", required = true) @RequestBody SensorData sensorData) {
         try {
             // 设置唯一ID和时间戳
             if (sensorData.getID() == null || sensorData.getID().isEmpty()) {
@@ -60,13 +66,14 @@ public class SensorController {
 
     /**
      * 获取传感器历史数据（模拟数据）
-     * 
+     *
      * @param limit 返回记录数量限制
      * @return 传感器数据列表
      */
+    @Operation(summary = "获取传感器历史数据", description = "查询传感器的历史数据，目前返回模拟数据，可指定返回数据数量")
     @GetMapping("/history")
     public WebSocketResponse<List<SensorData>> getSensorHistory(
-            @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "返回记录数量限制，默认为10条", required = false) @RequestParam(defaultValue = "10") int limit) {
         try {
             log.info("获取传感器历史数据请求，限制数量: {}", limit);
             
