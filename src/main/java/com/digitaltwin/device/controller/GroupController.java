@@ -12,6 +12,9 @@ import com.digitaltwin.device.repository.GroupRepository;
 import com.digitaltwin.device.repository.PointRepository;
 import com.digitaltwin.device.service.PointService;
 import com.digitaltwin.system.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/groups")
 @RequiredArgsConstructor
+@Tag(name = "分组管理", description = "提供点位分组的增删改查管理接口，支持分组创建、点位分配、分页查询等功能")
 public class GroupController {
     
     private final GroupService groupService;
@@ -48,8 +52,10 @@ public class GroupController {
      * @param request 创建分组请求
      * @return 创建的分组信息
      */
+    @Operation(summary = "创建分组", description = "创建新的点位分组，用于组织和管理相关点位")
     @PostMapping
-    public ResponseEntity<ApiResponse> createGroup(@RequestBody CreateGroupRequest request) {
+    public ResponseEntity<ApiResponse> createGroup(
+            @Parameter(description = "创建分组请求信息", required = true) @RequestBody CreateGroupRequest request) {
         try {
             Group group = groupService.createGroup(request.getName(), request.getDescription());
             GroupDto groupDto = convertToDto(group);
@@ -67,9 +73,11 @@ public class GroupController {
      * @param request 包含新名称和描述的请求
      * @return 更新后的分组信息
      */
+    @Operation(summary = "更新分组信息", description = "更新指定分组的名称和描述信息")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse> updateGroup(@PathVariable Long id, 
-                                                  @RequestBody CreateGroupRequest request) {
+    public ResponseEntity<ApiResponse> updateGroup(
+            @Parameter(description = "分组ID", required = true) @PathVariable Long id,
+            @Parameter(description = "分组更新请求信息", required = true) @RequestBody CreateGroupRequest request) {
         try {
             Group group = groupService.updateGroup(id, request.getName(), request.getDescription());
             GroupDto groupDto = convertToDto(group);
@@ -86,6 +94,7 @@ public class GroupController {
      * @return 分组列表
      * @deprecated 推荐使用分页接口 /groups?page=0&size=10 以提高性能
      */
+    @Operation(summary = "获取所有分组", description = "获取系统中所有分组信息（已废弃，推荐使用分页接口）")
     @GetMapping
     @Deprecated
     public ResponseEntity<ApiResponse> getAllGroups() {
@@ -102,11 +111,12 @@ public class GroupController {
      * @param sort 排序字段（默认为id）
      * @return 分页分组列表
      */
+    @Operation(summary = "分页获取分组列表", description = "分页查询分组信息，支持排序参数")
     @GetMapping(params = {"page", "size"})
     public ResponseEntity<ApiResponse> getGroupsWithPagination(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sort) {
+            @Parameter(description = "页码（从0开始）", required = false) @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "排序字段", required = false) @RequestParam(defaultValue = "id") String sort) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by(sort));
             List<Group> groups = groupService.getAllGroups();
@@ -132,8 +142,10 @@ public class GroupController {
      * @param id 分组ID
      * @return 分组信息
      */
+    @Operation(summary = "根据ID获取分组", description = "查询指定分组的详细信息")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getGroupById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse> getGroupById(
+            @Parameter(description = "分组ID", required = true) @PathVariable Long id) {
         return groupService.getGroupById(id)
                 .map(group -> {
                     GroupDto groupDto = convertToDto(group);
@@ -149,8 +161,10 @@ public class GroupController {
      * @param name 分组名称（模糊匹配）
      * @return 分组列表
      */
+    @Operation(summary = "按名称模糊查询分组", description = "根据分组名称进行模糊匹配查询")
     @GetMapping(params = "name")
-    public ResponseEntity<ApiResponse> getGroupsByNameContaining(@RequestParam String name) {
+    public ResponseEntity<ApiResponse> getGroupsByNameContaining(
+            @Parameter(description = "分组名称（支持模糊匹配）", required = true) @RequestParam String name) {
         List<Group> groups = groupService.getGroupsByNameContaining(name);
         List<GroupDto> groupDtos = groups.stream()
                 .map(this::convertToDto)
@@ -164,8 +178,10 @@ public class GroupController {
      * @param id 分组ID
      * @return 操作结果
      */
+    @Operation(summary = "删除分组", description = "根据ID删除指定的分组")
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteGroup(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse> deleteGroup(
+            @Parameter(description = "分组ID", required = true) @PathVariable Long id) {
         try {
             groupService.deleteGroup(id);
             return ResponseEntity.ok(ApiResponse.success("分组删除成功"));
@@ -182,10 +198,11 @@ public class GroupController {
      * @param groupId 分组ID
      * @return 更新后的点位和分组信息
      */
+    @Operation(summary = "为点位分配分组", description = "将指定点位分配到指定的分组中")
     @PostMapping("/points/{pointId}/assign/{groupId}")
     public ResponseEntity<ApiResponse> assignPointToGroup(
-            @PathVariable Long pointId,
-            @PathVariable Long groupId) {
+            @Parameter(description = "点位ID", required = true) @PathVariable Long pointId,
+            @Parameter(description = "分组ID", required = true) @PathVariable Long groupId) {
         try {
             // 调用服务层分配点位
             Point point = groupService.assignPointToGroup(pointId, groupId);
@@ -214,8 +231,10 @@ public class GroupController {
      * @param pointId 点位ID
      * @return 更新后的点位信息
      */
+    @Operation(summary = "从分组中移除点位", description = "将指定点位从其所属的分组中移除")
     @PostMapping("/points/{pointId}/remove")
-    public ResponseEntity<ApiResponse> removePointFromGroup(@PathVariable Long pointId) {
+    public ResponseEntity<ApiResponse> removePointFromGroup(
+            @Parameter(description = "点位ID", required = true) @PathVariable Long pointId) {
         try {
             Point point = groupService.removePointFromGroup(pointId);
             // 如果点位原来属于某个分组，返回该分组信息
@@ -237,20 +256,22 @@ public class GroupController {
      * @param groupId 分组ID
      * @param pointName 点位名称（可选）
      * @param deviceName 设备名称（可选）
+     * @param published 发布状态（可选）
      * @param page 页码（从0开始，默认为0）
      * @param size 每页大小（默认为10）
      * @param sort 排序字段（默认为id）
      * @return 点位分页列表
      */
+    @Operation(summary = "查询分组下的点位列表", description = "分页查询指定分组下的点位，支持按点位名称、设备名称、发布状态筛选")
     @GetMapping("/{groupId}/points")
     public ResponseEntity<ApiResponse> getPointsByGroupWithFilters(
-            @PathVariable Long groupId,
-            @RequestParam(required = false) String pointName,
-            @RequestParam(required = false) String deviceName,
-            @RequestParam(required = false) Boolean published,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sort) {
+            @Parameter(description = "分组ID", required = true) @PathVariable Long groupId,
+            @Parameter(description = "点位名称（模糊匹配）", required = false) @RequestParam(required = false) String pointName,
+            @Parameter(description = "设备名称（模糊匹配）", required = false) @RequestParam(required = false) String deviceName,
+            @Parameter(description = "发布状态筛选", required = false) @RequestParam(required = false) Boolean published,
+            @Parameter(description = "页码（从0开始）", required = false) @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "排序字段", required = false) @RequestParam(defaultValue = "id") String sort) {
         
         try {
             // 创建分页请求

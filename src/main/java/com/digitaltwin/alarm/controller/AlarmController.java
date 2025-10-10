@@ -12,6 +12,9 @@ import com.digitaltwin.device.entity.Point;
 import com.digitaltwin.device.repository.DeviceRepository;
 import com.digitaltwin.device.repository.PointRepository;
 import com.digitaltwin.websocket.model.WebSocketResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +30,7 @@ import java.util.Collections;
 @RestController
 @RequestMapping("/alarms")
 @RequiredArgsConstructor
+@Tag(name = "告警管理", description = "提供告警信息的查询和统计接口，支持按设备、点位、传感器等维度查询告警数据")
 public class AlarmController {
 
     private final AlarmQueryService alarmQueryService;
@@ -36,12 +40,14 @@ public class AlarmController {
 
     /**
      * 根据设备ID获取告警
-     * 
+     *
      * @param deviceId 设备ID
      * @return 告警列表
      */
+    @Operation(summary = "根据设备ID获取告警", description = "查询指定设备的所有告警信息")
     @GetMapping("/device/{deviceId}")
-    public WebSocketResponse<List<Alarm>> getAlarmsByDeviceId(@PathVariable Long deviceId) {
+    public WebSocketResponse<List<Alarm>> getAlarmsByDeviceId(
+            @Parameter(description = "设备ID", required = true) @PathVariable Long deviceId) {
         try {
             List<Alarm> alarms = alarmQueryService.getAlarmsByDeviceId(deviceId);
             return WebSocketResponse.success(alarms);
@@ -53,12 +59,14 @@ public class AlarmController {
 
     /**
      * 根据点位标识获取告警
-     * 
+     *
      * @param pointId 点位标识
      * @return 告警列表
      */
+    @Operation(summary = "根据点位ID获取告警", description = "查询指定点位的所有告警信息")
     @GetMapping("/point/{pointId}")
-    public WebSocketResponse<List<Alarm>> getAlarmsByPointId(@PathVariable String pointId) {
+    public WebSocketResponse<List<Alarm>> getAlarmsByPointId(
+            @Parameter(description = "点位标识", required = true) @PathVariable String pointId) {
         try {
             List<Alarm> alarms = alarmQueryService.getAlarmsByPointId(pointId);
             return WebSocketResponse.success(alarms);
@@ -70,12 +78,14 @@ public class AlarmController {
 
     /**
      * 根据传感器ID获取告警
-     * 
+     *
      * @param sensorId 传感器ID
      * @return 告警列表
      */
+    @Operation(summary = "根据传感器ID获取告警", description = "查询指定传感器的所有告警信息")
     @GetMapping("/sensor/{sensorId}")
-    public WebSocketResponse<List<Alarm>> getAlarmsBySensorId(@PathVariable String sensorId) {
+    public WebSocketResponse<List<Alarm>> getAlarmsBySensorId(
+            @Parameter(description = "传感器ID", required = true) @PathVariable String sensorId) {
         try {
             List<Alarm> alarms = alarmQueryService.getAlarmsBySensorId(sensorId);
             return WebSocketResponse.success(alarms);
@@ -87,9 +97,10 @@ public class AlarmController {
 
     /**
      * 获取所有告警
-     * 
+     *
      * @return 告警列表
      */
+    @Operation(summary = "获取所有告警", description = "查询系统中的所有告警信息")
     @GetMapping("/all")
     public WebSocketResponse<List<Alarm>> getAllAlarms() {
         try {
@@ -103,12 +114,14 @@ public class AlarmController {
     
     /**
      * 根据告警状态获取告警
-     * 
+     *
      * @param state 告警状态
      * @return 告警列表
      */
+    @Operation(summary = "根据告警状态获取告警", description = "按照告警状态筛选查询告警信息")
     @GetMapping("/state/{state}")
-    public WebSocketResponse<List<Alarm>> getAlarmsByState(@PathVariable AlarmState state) {
+    public WebSocketResponse<List<Alarm>> getAlarmsByState(
+            @Parameter(description = "告警状态", required = true) @PathVariable AlarmState state) {
         try {
             List<Alarm> alarms = alarmQueryService.getAlarmsByState(state);
             return WebSocketResponse.success(alarms);
@@ -120,15 +133,16 @@ public class AlarmController {
     
     /**
      * 根据告警状态和设备ID获取告警
-     * 
+     *
      * @param state 告警状态
      * @param deviceId 设备ID
      * @return 告警列表
      */
+    @Operation(summary = "根据状态和设备ID获取告警", description = "按照告警状态和设备ID组合条件查询告警信息")
     @GetMapping("/state/{state}/device/{deviceId}")
     public WebSocketResponse<List<Alarm>> getAlarmsByStateAndDeviceId(
-            @PathVariable AlarmState state, 
-            @PathVariable Long deviceId) {
+            @Parameter(description = "告警状态", required = true) @PathVariable AlarmState state,
+            @Parameter(description = "设备ID", required = true) @PathVariable Long deviceId) {
         try {
             List<Alarm> alarms = alarmQueryService.getAlarmsByStateAndDeviceId(state, deviceId);
             return WebSocketResponse.success(alarms);
@@ -140,13 +154,14 @@ public class AlarmController {
 
     /**
      * 根据时间范围获取告警总次数
-     * 
+     *
      * @param timeRange 时间范围（今日、本周、本月、全年），若未传该参数或该参数的值为空字符串，则查询所有的告警总数
      * @return 告警总次数
      */
+    @Operation(summary = "获取告警统计数量", description = "按时间范围统计告警总次数，支持今日、本周、本月、全年等时间范围")
     @GetMapping("/count")
     public WebSocketResponse<AlarmCountResponse> getAlarmCountByTimeRange(
-            @RequestParam(required = false) String timeRange) {
+            @Parameter(description = "时间范围（今日、本周、本月、全年），为空则查询所有告警", required = false) @RequestParam(required = false) String timeRange) {
         try {
             Long count;
             if (timeRange == null || timeRange.isEmpty()) {
@@ -163,19 +178,20 @@ public class AlarmController {
 
     /**
      * 根据时间范围获取告警列表
-     * 
+     *
      * @param timeRange 时间范围（今日、本周、本月、全年）
      * @param page 页码（从0开始）
      * @param size 每页数量
      * @param deviceId 设备ID（可选）
      * @return 告警列表
      */
+    @Operation(summary = "分页查询告警列表", description = "按时间范围和设备ID分页查询告警列表，支持多种查询条件组合")
     @GetMapping("/list")
     public WebSocketResponse<AlarmListResponse> getAlarmsByTimeRange(
-            @RequestParam(required = false) String timeRange,
-            @RequestParam int page,
-            @RequestParam int size,
-            @RequestParam(required = false) Long deviceId) {
+            @Parameter(description = "时间范围（今日、本周、本月、全年）", required = false) @RequestParam(required = false) String timeRange,
+            @Parameter(description = "页码（从0开始）", required = true) @RequestParam int page,
+            @Parameter(description = "每页数量", required = true) @RequestParam int size,
+            @Parameter(description = "设备ID（可选）", required = false) @RequestParam(required = false) Long deviceId) {
         try {
             // 获取总次数和告警列表
             Long totalCount;
@@ -260,17 +276,18 @@ public class AlarmController {
     
     /**
      * 根据告警ID获取告警详情
-     * 
+     *
      * @param alarmId 告警ID
      * @param needOperateLog 是否需要操作日志
      * @param operateLogLimit 操作日志数量限制
      * @return 告警详情
      */
+    @Operation(summary = "获取告警详情", description = "根据告警ID查询告警的详细信息，可选择是否包含操作日志")
     @GetMapping("/detail/{alarmId}")
     public WebSocketResponse<AlarmDetailResponse> getAlarmDetail(
-            @PathVariable Long alarmId,
-            @RequestParam(defaultValue = "false") boolean needOperateLog,
-            @RequestParam(required = false) Integer operateLogLimit) {
+            @Parameter(description = "告警ID", required = true) @PathVariable Long alarmId,
+            @Parameter(description = "是否需要操作日志", required = false) @RequestParam(defaultValue = "false") boolean needOperateLog,
+            @Parameter(description = "操作日志数量限制", required = false) @RequestParam(required = false) Integer operateLogLimit) {
         try {
             AlarmDetailResponse response = alarmDetailService.getAlarmDetail(alarmId, needOperateLog, operateLogLimit);
             return WebSocketResponse.success(response);
@@ -282,13 +299,14 @@ public class AlarmController {
     
     /**
      * 根据设备ID获取最新告警详情
-     * 
+     *
      * @param deviceId 设备ID
      * @return 告警详情
      */
+    @Operation(summary = "获取设备最新告警详情", description = "查询指定设备的最新告警详细信息")
     @GetMapping("/latest/device/{deviceId}")
     public WebSocketResponse<AlarmDetailResponse> getLatestAlarmDetailByDeviceId(
-            @PathVariable Long deviceId) {
+            @Parameter(description = "设备ID", required = true) @PathVariable Long deviceId) {
         try {
             AlarmDetailResponse response = alarmDetailService.getLatestAlarmDetailByDeviceId(deviceId);
             return WebSocketResponse.success(response);
