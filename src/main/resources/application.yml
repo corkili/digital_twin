@@ -52,7 +52,7 @@ spring:
   datasource:
     url: jdbc:mysql://umi.xyz:3306/dt_db?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
+    username: dt
     password: Aa20250815!
     hikari:
       maximum-pool-size: 50
