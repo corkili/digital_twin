@@ -8,5 +8,6 @@ public class RepairGuideDto {
     private String name;
     private String type;
     private String content;
+    private Long deviceId;
     private Boolean isLearned;
 }

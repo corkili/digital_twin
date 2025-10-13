@@ -1,5 +1,5 @@
 # 基于 Ubuntu 22.04
-FROM crpi-7x0z5py955uoyio4.cn-hangzhou.personal.cr.aliyuncs.com/corkili/linux_amd64_openjdk:11-jdk-slim
+FROM docker.m.daocloud.io/library/openjdk:11-jdk-slim-bullseye
 
 # 创建工作目录
 RUN mkdir -p /app/dt_server/deploy

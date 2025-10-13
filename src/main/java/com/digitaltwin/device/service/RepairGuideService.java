@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -48,6 +51,11 @@ public class RepairGuideService {
                 dto.setName((String) guideMap.get("name"));
                 dto.setType((String) guideMap.get("type"));
                 dto.setContent((String) guideMap.get("content"));
+                // 处理新增的deviceId字段
+                Object deviceIdObj = guideMap.get("deviceId");
+                if (deviceIdObj != null) {
+                    dto.setDeviceId(((Number) deviceIdObj).longValue());
+                }
                 repairGuides.add(dto);
             }
         } catch (Exception e) {
@@ -75,6 +83,7 @@ public class RepairGuideService {
             dto.setName(guide.getName());
             dto.setType(guide.getType());
             dto.setContent(guide.getContent());
+            dto.setDeviceId(guide.getDeviceId());
 
             // 设置学习状态（未登录时默认为false）
             boolean isLearned = false;
@@ -117,5 +126,113 @@ public class RepairGuideService {
 
         // 保存学习状态
         repairGuideLearnStatusRepository.save(learnStatus);
+    }
+
+    /**
+     * 根据type获取修复指南列表
+     * @param type 指南类型：troubleshooting 或 repair
+     * @return 指定类型的指南列表
+     */
+    public List<RepairGuideDto> getRepairGuidesByType(String type) {
+        // 获取当前用户（可选）
+        User currentUser = SecurityContext.getCurrentUser();
+
+        final List<RepairGuideLearnStatus> learnStatusList;
+
+        // 如果用户已登录，查询用户学习状态
+        if (currentUser != null) {
+            learnStatusList = repairGuideLearnStatusRepository.findByUserId(currentUser.getId());
+        } else {
+            learnStatusList = new ArrayList<>();
+        }
+
+        // 按type筛选并设置学习状态
+        return repairGuides.stream()
+                .filter(guide -> type.equals(guide.getType()))
+                .map(guide -> {
+                    RepairGuideDto dto = new RepairGuideDto();
+                    dto.setId(guide.getId());
+                    dto.setName(guide.getName());
+                    dto.setType(guide.getType());
+                    dto.setContent(guide.getContent());
+                    dto.setDeviceId(guide.getDeviceId());
+
+                    // 设置学习状态（未登录时默认为false）
+                    boolean isLearned = false;
+                    if (currentUser != null) {
+                        isLearned = learnStatusList.stream()
+                                .anyMatch(status -> status.getGuideId().equals(guide.getId()) && status.getIsLearned());
+                    }
+                    dto.setIsLearned(isLearned);
+
+                    return dto;
+                }).collect(Collectors.toList());
+    }
+
+    /**
+     * 根据type和deviceId获取修复指南列表
+     * @param type 指南类型：troubleshooting 或 repair
+     * @param deviceId 设备ID（可选，为null时不按设备筛选）
+     * @return 指定类型和设备的指南列表
+     */
+    public List<RepairGuideDto> getRepairGuidesByTypeAndDevice(String type, Long deviceId) {
+        // 获取当前用户（可选）
+        User currentUser = SecurityContext.getCurrentUser();
+
+        final List<RepairGuideLearnStatus> learnStatusList;
+
+        // 如果用户已登录，查询用户学习状态
+        if (currentUser != null) {
+            learnStatusList = repairGuideLearnStatusRepository.findByUserId(currentUser.getId());
+        } else {
+            learnStatusList = new ArrayList<>();
+        }
+
+        // 按type和deviceId筛选并设置学习状态
+        return repairGuides.stream()
+                .filter(guide -> type.equals(guide.getType()))
+                .filter(guide -> deviceId == null || deviceId.equals(guide.getDeviceId()))
+                .map(guide -> {
+                    RepairGuideDto dto = new RepairGuideDto();
+                    dto.setId(guide.getId());
+                    dto.setName(guide.getName());
+                    dto.setType(guide.getType());
+                    dto.setContent(guide.getContent());
+                    dto.setDeviceId(guide.getDeviceId());
+
+                    // 设置学习状态（未登录时默认为false）
+                    boolean isLearned = false;
+                    if (currentUser != null) {
+                        isLearned = learnStatusList.stream()
+                                .anyMatch(status -> status.getGuideId().equals(guide.getId()) && status.getIsLearned());
+                    }
+                    dto.setIsLearned(isLearned);
+
+                    return dto;
+                }).collect(Collectors.toList());
+    }
+
+    /**
+     * 分页获取指定类型的修复指南列表
+     * @param type 指南类型：troubleshooting 或 repair
+     * @param deviceId 设备ID（可选，为null时不按设备筛选）
+     * @param pageable 分页参数
+     * @return 分页的指南列表
+     */
+    public Page<RepairGuideDto> getRepairGuidesByTypeAndDeviceWithPagination(String type, Long deviceId, Pageable pageable) {
+        // 先获取全量数据
+        List<RepairGuideDto> allGuides = getRepairGuidesByTypeAndDevice(type, deviceId);
+
+        // 计算分页
+        int totalElements = allGuides.size();
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), totalElements);
+
+        // 提取当前页的数据
+        List<RepairGuideDto> pageContent = start >= totalElements ?
+            new ArrayList<>() :
+            allGuides.subList(start, end);
+
+        return new PageImpl<>(pageContent, pageable, totalElements);
     }
 }
