@@ -11,6 +11,7 @@ import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
 import com.digitaltwin.simulation.dto.ExperimentComponentDto;
 import com.digitaltwin.simulation.dto.CreateExperimentRequest;
 import com.digitaltwin.simulation.dto.CreateExperimentResponse;
+import com.digitaltwin.simulation.dto.SimulationStepNode;
 import com.digitaltwin.simulation.enums.RoleType;
 import com.digitaltwin.simulation.service.SimulationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -254,7 +255,7 @@ public class SimulationController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(SimulationApiResponse.error("路径中的试验ID与请求体中的试验ID不匹配"));
             }
-            
+
             boolean success = simulationService.updateExperimentSteps(request.getExperimentId(), request.getSteps());
             if (success) {
                 return ResponseEntity.ok(SimulationApiResponse.success("修改试验步骤成功", "操作完成"));
@@ -266,6 +267,68 @@ public class SimulationController {
             log.error("修改试验步骤失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(SimulationApiResponse.error("修改试验步骤失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 删除试验
+     *
+     * @param id 试验ID
+     * @return 删除结果
+     */
+    @Operation(summary = "删除试验", description = "根据ID删除指定的仿真试验")
+    @PostMapping("/{id}/delete")
+    public ResponseEntity<SimulationApiResponse<Void>> deleteExperiment(
+            @Parameter(description = "试验ID") @PathVariable Long id) {
+        try {
+            boolean deleted = simulationService.deleteExperiment(id);
+            if (deleted) {
+                return ResponseEntity.ok(SimulationApiResponse.success("删除试验成功", null));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(SimulationApiResponse.error("未找到ID为 " + id + " 的试验"));
+            }
+        } catch (Exception e) {
+            log.error("删除试验失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("删除试验失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 获取试验的所有SimulationStepNode
+     *
+     * @param id 试验ID
+     * @param role 角色类型过滤，可选参数
+     * @return 所有SimulationStepNode的扁平化列表
+     */
+    @Operation(summary = "获取试验的所有节点", description = "获取指定试验的所有SimulationStepNode，包括嵌套的子节点")
+    @GetMapping("/{id}/nodes")
+    public ResponseEntity<SimulationApiResponse<List<SimulationStepNode>>> getExperimentNodes(
+            @Parameter(description = "试验ID") @PathVariable Long id,
+            @Parameter(description = "角色类型过滤，支持'data_operator'和'commander'，为空时返回全量数据")
+            @RequestParam(value = "role", required = false) String role) {
+        try {
+            RoleType roleType = null;
+            if (role != null && !role.trim().isEmpty()) {
+                roleType = RoleType.fromDisplayName(role.trim());
+                if (roleType == null) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(SimulationApiResponse.error("不支持的角色类型: " + role + "，支持的角色类型: data_operator, commander"));
+                }
+            }
+
+            Optional<List<SimulationStepNode>> nodes = simulationService.getExperimentNodes(id, roleType);
+            if (nodes.isPresent()) {
+                return ResponseEntity.ok(SimulationApiResponse.success("获取试验节点成功", nodes.get()));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(SimulationApiResponse.error("未找到ID为 " + id + " 的试验或试验无节点数据"));
+            }
+        } catch (Exception e) {
+            log.error("获取试验节点失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("获取试验节点失败: " + e.getMessage()));
         }
     }
 }

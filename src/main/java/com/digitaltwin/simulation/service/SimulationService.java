@@ -538,6 +538,86 @@ public class SimulationService {
     }
 
     /**
+     * 删除试验
+     * @param id 试验ID
+     * @return 是否删除成功
+     */
+    @Transactional
+    public boolean deleteExperiment(Long id) {
+        try {
+            if (!simulationRepository.existsById(id)) {
+                log.warn("试验不存在: id={}", id);
+                return false;
+            }
+
+            simulationRepository.deleteById(id);
+            log.info("成功删除试验: id={}", id);
+            return true;
+
+        } catch (Exception e) {
+            log.error("删除试验失败: id={}, error={}", id, e.getMessage(), e);
+            throw new RuntimeException("删除试验失败", e);
+        }
+    }
+
+    /**
+     * 获取试验的所有SimulationStepNode（扁平化）
+     * @param id 试验ID
+     * @param roleType 角色类型过滤（可选）
+     * @return 所有SimulationStepNode的扁平化列表
+     */
+    public Optional<List<SimulationStepNode>> getExperimentNodes(Long id, RoleType roleType) {
+        try {
+            Optional<ExperimentStepsResponseDto> stepsOpt = getExperimentStepsV2(id, false, roleType);
+            if (!stepsOpt.isPresent() || stepsOpt.get().getManualSteps() == null) {
+                return Optional.empty();
+            }
+
+            List<SimulationStepNode> allNodes = new ArrayList<>();
+            ExperimentStepsDto manualSteps = stepsOpt.get().getManualSteps();
+
+            // 遍历所有步骤
+            for (ExperimentStepDto step : manualSteps.getSteps()) {
+                if (step.getRoles() != null) {
+                    // 遍历所有角色
+                    for (RoleDto role : step.getRoles()) {
+                        if (role.getTasks() != null) {
+                            // 递归提取所有节点
+                            for (SimulationStepNode task : role.getTasks()) {
+                                extractAllNodes(task, allNodes);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return Optional.of(allNodes);
+
+        } catch (Exception e) {
+            log.error("获取试验节点失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取试验节点失败", e);
+        }
+    }
+
+    /**
+     * 递归提取SimulationStepNode（包括子节点）
+     * @param node 当前节点
+     * @param allNodes 所有节点列表
+     */
+    private void extractAllNodes(SimulationStepNode node, List<SimulationStepNode> allNodes) {
+        if (node != null) {
+            allNodes.add(node);
+
+            // 递归处理子节点
+            if (node.getChild() != null && !node.getChild().isEmpty()) {
+                for (SimulationStepNode childNode : node.getChild()) {
+                    extractAllNodes(childNode, allNodes);
+                }
+            }
+        }
+    }
+
+    /**
      * 创建新试验
      *
      * @param request 创建试验请求
