@@ -7,6 +7,7 @@ import com.digitaltwin.simulation.dto.ExperimentStepsResponseDto;
 import com.digitaltwin.simulation.dto.ExperimentDescriptionDto;
 import com.digitaltwin.simulation.dto.SubmitExperimentStepRequest;
 import com.digitaltwin.simulation.dto.UpdateExperimentStepsRequest;
+import com.digitaltwin.simulation.dto.UpdateExperimentRequest;
 import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
 import com.digitaltwin.simulation.dto.ExperimentComponentDto;
 import com.digitaltwin.simulation.dto.CreateExperimentRequest;
@@ -234,6 +235,39 @@ public class SimulationController {
             log.error("获取试验组件列表失败: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(SimulationApiResponse.error("获取试验组件列表失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 修改试验
+     *
+     * @param id 试验ID
+     * @param request 修改请求，包含试验名称、描述和步骤数据
+     * @return 修改结果
+     */
+    @Operation(summary = "修改试验", description = "更新指定试验的完整信息，包括名称、描述和步骤数据")
+    @PutMapping("/{id}")
+    public ResponseEntity<SimulationApiResponse<String>> updateExperiment(
+            @Parameter(description = "试验ID") @PathVariable Long id,
+            @Valid @RequestBody UpdateExperimentRequest request) {
+        try {
+            // 验证请求参数
+            if (!id.equals(request.getExperimentId())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(SimulationApiResponse.error("路径中的试验ID与请求体中的试验ID不匹配"));
+            }
+
+            boolean success = simulationService.updateExperiment(request);
+            if (success) {
+                return ResponseEntity.ok(SimulationApiResponse.success("修改试验成功", "操作完成"));
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(SimulationApiResponse.error("修改试验失败，请检查数据格式和试验ID"));
+            }
+        } catch (Exception e) {
+            log.error("修改试验失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(SimulationApiResponse.error("修改试验失败: " + e.getMessage()));
         }
     }
 

@@ -13,6 +13,7 @@ import com.digitaltwin.simulation.dto.EmergencyProcedureDto;
 import com.digitaltwin.simulation.dto.ExperimentComponentDto;
 import com.digitaltwin.simulation.dto.CreateExperimentRequest;
 import com.digitaltwin.simulation.dto.CreateExperimentResponse;
+import com.digitaltwin.simulation.dto.UpdateExperimentRequest;
 import com.digitaltwin.simulation.enums.RoleType;
 import com.digitaltwin.simulation.entity.SimulationExperiment;
 import com.digitaltwin.simulation.entity.UserExperimentRecord;
@@ -489,7 +490,63 @@ public class SimulationService {
 
         return filteredSteps;
     }
-    
+
+    /**
+     * 更新试验
+     *
+     * @param request 更新请求，包含试验ID、名称、描述和步骤列表
+     * @return 是否更新成功
+     */
+    @Transactional
+    public boolean updateExperiment(UpdateExperimentRequest request) {
+        try {
+            Optional<SimulationExperiment> experimentOpt = simulationRepository.findById(request.getExperimentId());
+            if (!experimentOpt.isPresent()) {
+                log.error("未找到ID为 {} 的试验", request.getExperimentId());
+                return false;
+            }
+
+            SimulationExperiment experiment = experimentOpt.get();
+
+            // 更新名称
+            if (request.getName() != null && !request.getName().trim().isEmpty()) {
+                experiment.setName(request.getName().trim());
+            }
+
+            // 更新描述
+            if (request.getDescription() != null) {
+                experiment.setDescription(request.getDescription());
+            }
+
+            // 更新步骤数据
+            if (request.getSteps() != null && !request.getSteps().isEmpty()) {
+                // 验证每个步骤的必要字段
+                for (ExperimentStepDto step : request.getSteps()) {
+                    if (step.getStepId() == null || step.getStepName() == null || step.getStepName().trim().isEmpty()) {
+                        log.error("步骤数据不完整: stepId={}, stepName={}", step.getStepId(), step.getStepName());
+                        return false;
+                    }
+                }
+
+                // 将步骤列表序列化为JSON
+                String stepsJson = objectMapper.writeValueAsString(request.getSteps());
+                experiment.setStepsData(stepsJson);
+            }
+
+            // 保存更新
+            simulationRepository.save(experiment);
+            log.info("成功更新试验: id={}, name={}, steps count={}",
+                    request.getExperimentId(),
+                    request.getName(),
+                    request.getSteps() != null ? request.getSteps().size() : 0);
+
+            return true;
+        } catch (Exception e) {
+            log.error("更新试验失败: experimentId={}, error={}", request.getExperimentId(), e.getMessage(), e);
+            return false;
+        }
+    }
+
     /**
      * 更新试验步骤
      *
