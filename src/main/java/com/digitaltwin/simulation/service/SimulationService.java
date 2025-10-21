@@ -227,10 +227,10 @@ public class SimulationService {
             if (!simulationRepository.existsById(request.getTargetExperimentId())) {
                 throw new RuntimeException("试验ID不存在: " + request.getTargetExperimentId());
             }
-            
-            // 将ExperimentStepDto列表序列化为JSON
+
+            // 将ue字符串列表序列化为JSON
             String stepDataJson = objectMapper.writeValueAsString(request.getExperimentSteps());
-            
+
             // 计算得分
             Integer score = calculateScore(request.getTargetExperimentId(), request.getExperimentSteps());
             
@@ -261,12 +261,12 @@ public class SimulationService {
     
     /**
      * 计算用户提交步骤的得分
-     * 
+     *
      * @param targetExperimentId 目标试验ID（标准答案）
-     * @param userSubmission 用户提交的试验步骤数组
+     * @param userSubmission 用户提交的ue字符串数组
      * @return 得分（0-100的整数）
      */
-    private Integer calculateScore(Long targetExperimentId, List<ExperimentStepDto> userSubmission) {
+    private Integer calculateScore(Long targetExperimentId, List<String> userSubmission) {
         try {
             // 获取标准答案（不乱序）
             Optional<ExperimentStepsDto> standardAnswerOpt = getExperimentSteps(targetExperimentId, false);
@@ -274,39 +274,40 @@ public class SimulationService {
                 log.warn("未找到试验ID {} 的标准答案", targetExperimentId);
                 return 0;
             }
-            
+
             ExperimentStepsDto standardAnswer = standardAnswerOpt.get();
-            
-            // 提取标准答案中的所有SimulationStepNode名称（按顺序）
-            List<String> standardNames = extractSimulationStepNodeNamesFromSteps(standardAnswer.getSteps());
-            
-            // 提取用户提交中的所有SimulationStepNode名称（按顺序）
-            List<String> userNames = extractSimulationStepNodeNamesFromSteps(userSubmission);
-            
+
+            // 提取标准答案中的所有ue（按顺序）
+            List<String> standardUes = extractUeFromSteps(standardAnswer.getSteps());
+
+            // 用户提交已经是ue数组
+            List<String> userUes = userSubmission;
+
             // 计算得分
-            if (standardNames.isEmpty()) {
+            if (standardUes.isEmpty()) {
+                log.warn("标准答案中没有ue数据");
                 return 0;
             }
-            
-            int totalNodes = standardNames.size();
+
+            int totalNodes = standardUes.size();
             int correctCount = 0;
-            
-            // 按顺序比对名称
-            int minLength = Math.min(standardNames.size(), userNames.size());
+
+            // 按顺序比对ue
+            int minLength = Math.min(standardUes.size(), userUes.size());
             for (int i = 0; i < minLength; i++) {
-                if (standardNames.get(i).equals(userNames.get(i))) {
+                if (standardUes.get(i).equals(userUes.get(i))) {
                     correctCount++;
                 }
             }
-            
+
             // 计算正确步骤数占总步骤数的比例 * 100
             int finalScore = Math.round((float) correctCount / totalNodes * 100);
-            
-            log.debug("打分详情 - 总节点数: {}, 正确数量: {}, 正确率: {}%, 最终得分: {}", 
+
+            log.debug("打分详情 - 总ue数: {}, 正确数量: {}, 正确率: {}%, 最终得分: {}",
                 totalNodes, correctCount, Math.round((float) correctCount / totalNodes * 100), finalScore);
-            
+
             return finalScore;
-            
+
         } catch (Exception e) {
             log.error("计算得分失败: {}", e.getMessage(), e);
             return 0;
@@ -314,64 +315,39 @@ public class SimulationService {
     }
     
     /**
-     * 提取步骤数组中所有SimulationStepNode的name字段
-     * 
+     * 提取步骤数组中所有SimulationStepNode的ue字段（只提取第一层）
+     *
      * @param experimentSteps 试验步骤数组
-     * @return 按顺序排列的name列表
+     * @return 按顺序排列的ue列表
      */
-    private List<String> extractSimulationStepNodeNamesFromSteps(List<ExperimentStepDto> experimentSteps) {
-        List<String> names = new ArrayList<>();
-        
+    private List<String> extractUeFromSteps(List<ExperimentStepDto> experimentSteps) {
+        List<String> ues = new ArrayList<>();
+
         if (experimentSteps == null || experimentSteps.isEmpty()) {
-            return names;
+            return ues;
         }
-        
+
         // 遍历所有步骤
         for (ExperimentStepDto step : experimentSteps) {
-            List<String> stepNames = extractSimulationStepNodeNames(step);
-            names.addAll(stepNames);
-        }
-        
-        return names;
-    }
-    
-    /**
-     * 递归提取ExperimentStepDto中所有SimulationStepNode的name字段
-     * 
-     * @param experimentStep 试验步骤DTO
-     * @return 按顺序排列的name列表
-     */
-    private List<String> extractSimulationStepNodeNames(ExperimentStepDto experimentStep) {
-        List<String> names = new ArrayList<>();
-        
-        if (experimentStep == null || experimentStep.getRoles() == null) {
-            return names;
-        }
-        
-        // 遍历所有角色
-        for (RoleDto role : experimentStep.getRoles()) {
-            if (role.getTasks() != null) {
-                // 遍历每个角色的任务节点
-                for (SimulationStepNode task : role.getTasks()) {
-                    extractNodeNames(task, names);
+            if (step.getRoles() == null) {
+                continue;
+            }
+
+            // 遍历所有角色
+            for (RoleDto role : step.getRoles()) {
+                if (role.getTasks() != null) {
+                    // 遍历每个角色的任务节点
+                    for (SimulationStepNode task : role.getTasks()) {
+                        // 只提取第一层的ue，不递归处理child节点
+                        if (task != null && task.getUe() != null) {
+                            ues.add(task.getUe());
+                        }
+                    }
                 }
             }
         }
-        
-        return names;
-    }
-    
-    /**
-     * 递归提取SimulationStepNode中的name（只提取第一层，不包括嵌套的child节点）
-     * 
-     * @param node 步骤节点
-     * @param names 名称列表
-     */
-    private void extractNodeNames(SimulationStepNode node, List<String> names) {
-        if (node != null && node.getName() != null) {
-            names.add(node.getName());
-        }
-        // 注意：根据需求，这里不递归处理child节点，只处理第一层
+
+        return ues;
     }
     
     /**
