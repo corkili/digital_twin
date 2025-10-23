@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -68,6 +70,34 @@ public class RabbitMQConsumerService {
                 log.warn("传感器数据无效: {}", sensorData);
                 return;
             }
+
+            // 1. 获取原始 Map
+            Map<String, Object> rawMap = sensorData.getPointDataMap();
+            if (rawMap == null) {
+                return; // 空 Map 直接返回
+            }
+
+            // 2. 处理 Map 中的数值，保留 2 位小数
+            Map<String, Object> processedMap = new HashMap<>();
+            for (Map.Entry<String, Object> entry : rawMap.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                // 只处理数值类型（double、float、Integer 等）
+                if (value instanceof Number) {
+                    // 转换为 BigDecimal 并设置精度（四舍五入）
+                    BigDecimal num = new BigDecimal(value.toString())
+                            .setScale(2, RoundingMode.HALF_UP); // 保留 2 位小数
+                    processedMap.put(key, num);
+                } else {
+                    // 非数值类型直接保留（如字符串、布尔值等）
+                    processedMap.put(key, value);
+                }
+            }
+
+            // 3. 将处理后的 Map 重新设置到 SensorData 中
+            sensorData.setPointDataMap(processedMap);
+
 
             // 检查EStop点位值变化
             checkEStopPoint(sensorData);
