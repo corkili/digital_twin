@@ -11,11 +11,13 @@ public class FaultCategoryDto {
     private String faultType;
     private String description;
     private Integer trainingDifficulty;
+    private String ue;
 
     public FaultCategoryDto(FaultCategory faultCategory) {
         this.id = faultCategory.getId();
         this.faultType = faultCategory.getFaultType();
         this.description = faultCategory.getDescription();
         this.trainingDifficulty = faultCategory.getTrainingDifficulty();
+        this.ue = faultCategory.getUe();
     }
 }

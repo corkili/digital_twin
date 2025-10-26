@@ -20,4 +20,7 @@ public class FaultCategory {
 
     @Column(name = "training_difficulty", nullable = false)
     private Integer trainingDifficulty;
+
+    @Column(name = "ue")
+    private String ue;
 }
